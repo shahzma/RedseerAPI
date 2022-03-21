@@ -105,6 +105,7 @@ class ReportVersionGetSerializer(serializers.ModelSerializer):
         # rep.pop('report_result')
         # rep_result = ReportResultSerializer(instance.id).data
         # print(rep_result)
+        rep['id'] = rep_details['id']
         rep = {**rep_details, **rep}
         return rep
 
@@ -158,6 +159,7 @@ class ReportVersionSerializer(serializers.ModelSerializer):
         # rep.pop('report_result')
         # rep_result = ReportResultSerializer(instance.id).data
         # print(rep_result)
+        rep['id'] = rep_details['id']
         rep = {**rep_details, **rep}
         return rep
 
