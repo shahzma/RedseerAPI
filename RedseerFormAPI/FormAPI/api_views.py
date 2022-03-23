@@ -180,17 +180,18 @@ class ReportVersionCView(CreateAPIView):
                 for i in data['questions']:
                     parametertree_obj = models.ParameterTree.objects.get(id=i['id'])
                     for j in i['sub_questions']:
-                        parameter_obj = models.Parameter.objects.get(parameter_id=j['id'])
-                        report_ver_obj = models.ReportVersion.objects.get(id=data['current_instance']['id'])
-                        report_res, created = models.MainData.objects.update_or_create(parameter=parameter_obj,
-                                                                                       parametertree=parametertree_obj,
-                                                                                       report_version=report_ver_obj,
-                                                                                       source='old data files', #rename
-                                                                                       player=company_obj,
-                                                                                       start_date=start_date,
-                                                                                       end_date=end_date,
-                                                                                    defaults={'value': j['current_value']})
-                        report_res.save()
+                        if type(j['current_value'])== int or type(j['current_value'])==float:
+                            parameter_obj = models.Parameter.objects.get(parameter_id=j['id'])
+                            report_ver_obj = models.ReportVersion.objects.get(id=data['current_instance']['id'])
+                            report_res, created = models.MainData.objects.update_or_create(parameter=parameter_obj,
+                                                                                           parametertree=parametertree_obj,
+                                                                                           report_version=report_ver_obj,
+                                                                                           source='old data files', #rename
+                                                                                           player=company_obj,
+                                                                                           start_date=start_date,
+                                                                                           end_date=end_date,
+                                                                                        defaults={'value': j['current_value']})
+                            report_res.save()
         except models.ReportVersion.DoesNotExist:
             # no need to create new entry in report result as this part will be triggered by scheduler
             new_report_ver = models.ReportVersion.objects.create(name=data["name"], report=report_obj,
