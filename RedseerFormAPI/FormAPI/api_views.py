@@ -1,4 +1,5 @@
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, GenericAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, CreateAPIView, ListAPIView
+
 from . import serializers, models
 from rest_framework.response import Response
 import calendar
@@ -142,6 +143,62 @@ class ReportVersionLCView(ListCreateAPIView):
         serializer = serializers.ReportVersionSerializer(new_report_ver)
         return Response(serializer.data)
 
+
+class ReportVersionLView(ListAPIView):
+    serializer_class = serializers.ReportVersionGetSerializer
+    queryset = models.ReportVersion.objects
+
+
+class ReportVersionCView(CreateAPIView):
+    serializer_class = serializers.ReportVersionGetSerializer
+    queryset = models.ReportVersion.objects
+
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        report_obj = models.Report.objects.get(id=data['id'])
+        # report_obj = models.Report.objects.get(id=data['report'])
+        curr_instance = data['current_instance']
+        company_obj = models.Player.objects.get(player_name=data['company'])
+        # new_report_ver = models.ReportVersion.objects.create(name=data["name"], report=report_obj, company=data["company"])
+        try:
+        #check wrt instance id instead
+            # new_report_ver = models.ReportVersion.objects.get(name=data["name"], report=report_obj, company=data["company"])
+            new_report_ver = models.ReportVersion.objects.get(id=curr_instance['id'])
+            print('exists')
+            # update code for reportresult
+            if new_report_ver:
+                start_date = datetime.date.today().replace(day=1)
+                end_date = date.today().replace(day=calendar.monthrange(date.today().year, date.today().month)[1])
+                # if data['start_date']:
+                #     start_date = data['start_date']
+                #     start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+                #     start_date = start_date.date()
+                # if data['end_date']:
+                #     end_date = data['end_date']
+                #     end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+                #     end_date = end_date.date()
+                for i in data['questions']:
+                    parametertree_obj = models.ParameterTree.objects.get(id=i['id'])
+                    for j in i['sub_questions']:
+                        parameter_obj = models.Parameter.objects.get(parameter_id=j['id'])
+                        report_ver_obj = models.ReportVersion.objects.get(id=data['current_instance']['id'])
+                        report_res, created = models.MainData.objects.update_or_create(parameter=parameter_obj,
+                                                                                       parametertree=parametertree_obj,
+                                                                                       report_version=report_ver_obj,
+                                                                                       source='old data files', #rename
+                                                                                       player=company_obj,
+                                                                                       start_date=start_date,
+                                                                                       end_date=end_date,
+                                                                                    defaults={'value': j['current_value']})
+                        report_res.save()
+        except models.ReportVersion.DoesNotExist:
+            # no need to create new entry in report result as this part will be triggered by scheduler
+            new_report_ver = models.ReportVersion.objects.create(name=data["name"], report=report_obj,
+                                                                 company=data['company'])
+            new_report_ver.save()
+
+        serializer = serializers.ReportVersionSerializer(new_report_ver)
+        return Response(serializer.data)
 
 # # wont work if you dont have lookup field id defined by you make id auto field
 class ReportVersionRUDView(RetrieveUpdateDestroyAPIView):

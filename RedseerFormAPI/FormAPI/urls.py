@@ -3,7 +3,7 @@
 #     ReportResultRUDView, SubQuestionRUDView, SubQuestionLCView, QuestionLCView, QuestionRUDView, insideFormLCView
 #
 from .api_views import PlayerLCView, ParameterLCView, ReportResultLCView, ReportLCView, ParameterTreeLCView,\
-    ReportVersionLCView, ReportVersionRUDView
+    ReportVersionLCView, ReportVersionRUDView, ReportVersionLView, ReportVersionCView
 
 from django.urls import path, include
 
@@ -26,8 +26,12 @@ report_urls = [
 ]
 
 reportversion_urls = [
-    path("", ReportVersionLCView.as_view(), name="lc"),
-    path("<int>/<int:id>", ReportVersionRUDView.as_view(), name="rud")
+    path("", ReportVersionLView.as_view(), name="l"),
+    path("<int>/<int:id>/", ReportVersionRUDView.as_view(), name="rud")
+]
+
+formresult_urls = [
+    path("<int>/<int:id>/", ReportVersionCView.as_view(), name="c")
 ]
 
 reportresult_urls = [
@@ -54,6 +58,7 @@ urlpatterns = [
     path("parametertree/", include((parametertree_urls, "parametertree"), namespace="parametertree")),
     path("reports/", include((report_urls, "report"), namespace="report")),
     path("forms/", include((reportversion_urls, "reportversion"), namespace="reportversion")),
+    path("formresult/", include((formresult_urls, "formresult"), namespace="formresult")),
     path("reportresult/", include((reportresult_urls, "reportresult"), namespace="reportresult")),
     # path("subquestions/", include((subquestions_urls, "subquestions"), namespace="subquestions")),
     # path("questions/", include((questions_urls, "questions"), namespace="questions")),

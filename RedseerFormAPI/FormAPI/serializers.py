@@ -150,7 +150,7 @@ class ReportVersionSerializer(serializers.ModelSerializer):
                 for k in last_report_results:
                     if i['id'] == k.parametertree.id and j['id'] == k.parameter.parameter_id:
                         last_val = last_val+' '+str(k.value)
-                j['last_values'] = last_val
+                j['last_value'] = last_val
 
 
 
