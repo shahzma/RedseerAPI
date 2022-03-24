@@ -85,7 +85,7 @@ class ReportResultSerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = ['id']
 
-
+# use for land c
 class ReportVersionGetSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
@@ -94,7 +94,7 @@ class ReportVersionGetSerializer(serializers.ModelSerializer):
             'id': rep['id'],
             'created_at': rep['date_created']
         }
-        rep['is_submitted'] = False
+        # rep['is_submitted'] = False
         rep['last_modified_date'] = datetime.date.today()
         # print(Report.objects.filter(id=instance.report.id)[0].question) = none as question is many to many
         # remove questions in get and add for rud
@@ -114,7 +114,7 @@ class ReportVersionGetSerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = ['id']
 
-
+# use for rud bcoz we want questions there
 class ReportVersionSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
@@ -123,7 +123,7 @@ class ReportVersionSerializer(serializers.ModelSerializer):
             'id': rep['id'],
             'created_at': rep['date_created']
         }
-        rep['is_submitted'] = False
+        # rep['is_submitted'] = False
         rep['last_modified_date'] = datetime.date.today()
         # print(Report.objects.filter(id=instance.report.id)[0].question) = none as question is many to many
         # remove questions in get and add for rud

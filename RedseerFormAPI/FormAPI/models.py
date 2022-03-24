@@ -92,6 +92,7 @@ class ReportVersion(models.Model):
     name = models.CharField(max_length=100)
     company = models.CharField(max_length=255, default='testCompany')
     report = models.ForeignKey(Report, on_delete=models.CASCADE)
+    is_submitted = models.BooleanField(default=False)
     date_created = models.DateTimeField(default=django.utils.timezone.now)
 
     class Meta:
