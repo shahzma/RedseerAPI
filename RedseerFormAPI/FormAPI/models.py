@@ -64,6 +64,7 @@ class Report(models.Model):
     name = models.CharField(max_length=100)
     frequency = models.TextField(choices=[(1,"Weekly"),(2,"Monthly"),(3,"Quarterly")])
     cutoff = models.IntegerField(default=15)
+    question_count = models.IntegerField(default=24)
     companies = models.ManyToManyField(Player)
     question = models.ManyToManyField(ParameterTree)
 
@@ -92,6 +93,7 @@ class ReportVersion(models.Model):
     name = models.CharField(max_length=100)
     company = models.CharField(max_length=255, default='testCompany')
     report = models.ForeignKey(Report, on_delete=models.CASCADE)
+    filled_count = models.IntegerField(default=0)
     is_submitted = models.BooleanField(default=False)
     date_created = models.DateTimeField(default=django.utils.timezone.now)
 

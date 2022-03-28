@@ -79,7 +79,7 @@ class ReportLCView(ListCreateAPIView):
             parameter_obj = models.ParameterTree.objects.get(id=param['id'])
             new_report.question.add(parameter_obj)
         for comp in data['companies']:
-            comp_obj = models.Player.objects.get(id=comp['id'])
+            comp_obj = models.Player.objects.get(player_id=comp['id'])
             new_report.companies.add(comp_obj)
         serializer = serializers.ReportSerializer(new_report)
         return Response(serializer.data)
@@ -128,11 +128,12 @@ class ReportVersionLCView(ListCreateAPIView):
                         report_res, created = models.MainData.objects.update_or_create(parameter=parameter_obj,
                                                                                        parametertree=parametertree_obj,
                                                                                        report_version=report_ver_obj,
-                                                                                       source='old data files', #rename
+                                                                                       source='Benchmark', #renamed
                                                                                        player=company_obj,
                                                                                        start_date=start_date,
                                                                                        end_date=end_date,
-                                                                                    defaults={'value': j['current_value']})
+                                                                                    defaults={'value': j['current_value'],
+                                                                                              'date_created':datetime.date.today()})
                         report_res.save()
         except models.ReportVersion.DoesNotExist:
             # no need to create new entry in report result as this part will be triggered by scheduler
@@ -164,6 +165,7 @@ class ReportVersionCView(CreateAPIView):
             # new_report_ver = models.ReportVersion.objects.get(name=data["name"], report=report_obj, company=data["company"])
             new_report_ver = models.ReportVersion.objects.get(id=curr_instance['id'])
             new_report_ver.is_submitted = data['is_submitted']
+            new_report_ver.filled_count = data['filled_count']
             print('exists')
             # update code for reportresult
             if new_report_ver:
@@ -183,7 +185,7 @@ class ReportVersionCView(CreateAPIView):
                     for j in i['sub_questions']:
                         try:
                             # doing this bcoz data can be string /blank/integer etc
-                            j['current_value']=float(j['current_value'])
+                            j['current_value'] = float(j['current_value'])
                             parameter_obj = models.Parameter.objects.get(parameter_id=j['id'])
                             report_ver_obj = models.ReportVersion.objects.get(id=data['current_instance']['id'])
                             report_res, created = models.MainData.objects.update_or_create(parameter=parameter_obj,

@@ -57,7 +57,8 @@ class ReportSerializer(serializers.ModelSerializer):
         # print(rep['companies'][0])
         rep['company'] = [d['player_name'] for d in rep['companies'] if 'player_name' in d]
         rep.pop('companies')
-        rep['filled_count'] = Report.objects.count()
+        # rep['filled_count'] = Report.objects.count()
+        rep['filled_count'] = 1
         rep['last_modified_date'] = datetime.date.today()
         rep['is_submitted'] = False
         rep['current_instance'] = {
@@ -94,18 +95,40 @@ class ReportVersionGetSerializer(serializers.ModelSerializer):
             'id': rep['id'],
             'created_at': rep['date_created']
         }
-        # rep['is_submitted'] = False
         rep['last_modified_date'] = datetime.date.today()
-        # print(Report.objects.filter(id=instance.report.id)[0].question) = none as question is many to many
+        # print(Report.objects.filter(id=instance.report.id)[0].question_count) #= none as question is many to many
+        # remove questions in get and add for rud
+        # rep_details = ReportSerializer(instance.report).data
+        # rep_details.pop('questions')
+        # rep.pop('report')
+        rep['question_count'] = Report.objects.filter(id=instance.report.id)[0].question_count
+        rep.pop('date_created')
+        rep['schedule'] = "monthly"  # get it from report object if there are some whanges wrt schedult
+        rep['deadline_days'] = 15  # get it from report object if  changes .Question count from report version or report
+        rep['id'] = rep['report']
+        # rep = {**rep_details, **rep}
+        return rep
+
+    class Meta:
+        model = ReportVersion
+        fields = "__all__"
+        read_only_fields = ['id']
+
+
+class ReportVersionPostSerializer(serializers.ModelSerializer):
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep['current_instance'] = {
+            'id': rep['id'],
+            'created_at': rep['date_created']
+        }
+        rep['last_modified_date'] = datetime.date.today()
         # remove questions in get and add for rud
         rep_details = ReportSerializer(instance.report).data
         rep_details.pop('questions')
-        # rep.pop('report')
         rep.pop('date_created')
-        # rep.pop('report_result')
-        # rep_result = ReportResultSerializer(instance.id).data
-        # print(rep_result)
-        rep['id'] = rep_details['id']
+        rep['id'] = rep['report']
         rep = {**rep_details, **rep}
         return rep
 
@@ -113,6 +136,7 @@ class ReportVersionGetSerializer(serializers.ModelSerializer):
         model = ReportVersion
         fields = "__all__"
         read_only_fields = ['id']
+
 
 # use for rud bcoz we want questions there
 class ReportVersionSerializer(serializers.ModelSerializer):
@@ -126,13 +150,15 @@ class ReportVersionSerializer(serializers.ModelSerializer):
         # rep['is_submitted'] = False
         rep['last_modified_date'] = datetime.date.today()
         # print(Report.objects.filter(id=instance.report.id)[0].question) = none as question is many to many
-        # remove questions in get and add for rud
         rep_details = ReportSerializer(instance.report).data
         # # is a list.testing for instance-id = 7
         current_rep_results = MainData.objects.filter(report_version=instance.id)
         # # getting all previous ids which is less than current id and are of same report instance and
         # then choosing last3
-        ids=[a.id for a in ReportVersion.objects.filter(report=instance.report,id__lt=instance.id).order_by('-id')[:3]]
+        ids=[a.id for a in ReportVersion.objects.filter(report=instance.report,
+                                                        id__lt=instance.id,
+                                                        company=instance.company).order_by('-id')[:3]]
+        print(ids)
         # getting form report result based on previous ids
         last_report_results=MainData.objects.filter(report_version__in=ids)
         for i in rep_details['questions']:
@@ -151,7 +177,6 @@ class ReportVersionSerializer(serializers.ModelSerializer):
                     if i['id'] == k.parametertree.id and j['id'] == k.parameter.parameter_id:
                         last_val = last_val+' '+str(k.value)
                 j['last_value'] = last_val
-
 
 
         # rep.pop('report')
