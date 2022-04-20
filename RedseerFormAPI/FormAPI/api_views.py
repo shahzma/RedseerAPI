@@ -4,7 +4,7 @@ from . import serializers, models
 from rest_framework.response import Response
 import calendar
 import datetime
-from datetime import date
+from datetime import date, timedelta
 
 
 class ParameterLCView(ListCreateAPIView):
@@ -91,7 +91,7 @@ class ReportLCView(ListCreateAPIView):
 #     lookup_field = "id"
 #     lookup_url_kwarg = "id"
 
-
+# ignore
 class ReportVersionLCView(ListCreateAPIView):
     serializer_class = serializers.ReportVersionGetSerializer
     queryset = models.ReportVersion.objects
@@ -110,16 +110,10 @@ class ReportVersionLCView(ListCreateAPIView):
             print('exists')
             # update code for reportresult
             if new_report_ver:
-                start_date = datetime.date.today().replace(day=1)
-                end_date = date.today().replace(day=calendar.monthrange(date.today().year, date.today().month)[1])
-                # if data['start_date']:
-                #     start_date = data['start_date']
-                #     start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
-                #     start_date = start_date.date()
-                # if data['end_date']:
-                #     end_date = data['end_date']
-                #     end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
-                #     end_date = end_date.date()
+                # start_date = datetime.date.today().replace(day=1)
+                # end_date = date.today().replace(day=calendar.monthrange(date.today().year, date.today().month)[1])
+                end_date = date.today().replace(day=1) - timedelta(days=1)
+                start_date = date.today().replace(day=1) - timedelta(days=end_date.day)
                 for i in data['questions']:
                     parametertree_obj = models.ParameterTree.objects.get(id=i['id'])
                     for j in i['sub_questions']:
@@ -166,20 +160,12 @@ class ReportVersionCView(CreateAPIView):
             new_report_ver = models.ReportVersion.objects.get(id=curr_instance['id'])
             new_report_ver.is_submitted = data['is_submitted']
             new_report_ver.filled_count = data['filled_count']
-            print('exists')
+            print('cview only exists')
             # update code for reportresult
             if new_report_ver:
                 new_report_ver.save()
-                start_date = datetime.date.today().replace(day=1)
-                end_date = date.today().replace(day=calendar.monthrange(date.today().year, date.today().month)[1])
-                # if data['start_date']:
-                #     start_date = data['start_date']
-                #     start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
-                #     start_date = start_date.date()
-                # if data['end_date']:
-                #     end_date = data['end_date']
-                #     end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
-                #     end_date = end_date.date()
+                end_date = date.today().replace(day=1) - timedelta(days=1)
+                start_date = date.today().replace(day=1) - timedelta(days=end_date.day)
                 for i in data['questions']:
                     parametertree_obj = models.ParameterTree.objects.get(id=i['id'])
                     for j in i['sub_questions']:

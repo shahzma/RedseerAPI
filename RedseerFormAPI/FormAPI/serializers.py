@@ -101,11 +101,13 @@ class ReportVersionGetSerializer(serializers.ModelSerializer):
         # rep_details = ReportSerializer(instance.report).data
         # rep_details.pop('questions')
         # rep.pop('report')
-        rep['question_count'] = Report.objects.filter(id=instance.report.id)[0].question_count
+        curr_report_object = Report.objects.filter(id=instance.report.id)[0]
+        rep['question_count'] = curr_report_object.question_count
         rep.pop('date_created')
         rep['schedule'] = "monthly"  # get it from report object if there are some whanges wrt schedult
-        rep['deadline_days'] = 15  # get it from report object if  changes .Question count from report version or report
-        rep['id'] = rep['report']
+        rep['deadline_days'] = 30  # get it from report object if  changes .Question count from report version or report
+        rep['industry_name'] = curr_report_object.name
+        # rep['id'] = rep['report']
         # rep = {**rep_details, **rep}
         return rep
 
@@ -129,6 +131,7 @@ class ReportVersionPostSerializer(serializers.ModelSerializer):
         rep_details.pop('questions')
         rep.pop('date_created')
         rep['id'] = rep['report']
+        rep['industry_name'] = Report.objects.filter(id=instance.report.id)[0].name
         rep = {**rep_details, **rep}
         return rep
 
@@ -184,6 +187,7 @@ class ReportVersionSerializer(serializers.ModelSerializer):
         # rep.pop('report_result')
         # rep_result = ReportResultSerializer(instance.id).data
         # print(rep_result)
+        rep['industry_name'] = Report.objects.filter(id=instance.report.id)[0].name
         rep['id'] = rep_details['id']
         rep = {**rep_details, **rep}
         return rep

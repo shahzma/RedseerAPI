@@ -63,7 +63,7 @@ class Report(models.Model):
     id = models.AutoField(primary_key=True, auto_created=True)
     name = models.CharField(max_length=100)
     frequency = models.TextField(choices=[(1,"Weekly"),(2,"Monthly"),(3,"Quarterly")])
-    cutoff = models.IntegerField(default=15)
+    cutoff = models.IntegerField(default=15) # change default to 30
     question_count = models.IntegerField(default=24)
     companies = models.ManyToManyField(Player)
     question = models.ManyToManyField(ParameterTree)

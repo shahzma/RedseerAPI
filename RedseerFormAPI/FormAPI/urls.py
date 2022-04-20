@@ -3,7 +3,7 @@
 #     ReportResultRUDView, SubQuestionRUDView, SubQuestionLCView, QuestionLCView, QuestionRUDView, insideFormLCView
 #
 from .api_views import PlayerLCView, ParameterLCView, ReportResultLCView, ReportLCView, ParameterTreeLCView,\
-    ReportVersionLCView, ReportVersionRUDView, ReportVersionLView, ReportVersionCView
+    ReportVersionRUDView, ReportVersionLView, ReportVersionCView
 
 from django.urls import path, include
 
