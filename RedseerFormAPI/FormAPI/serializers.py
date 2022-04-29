@@ -1,10 +1,20 @@
 import datetime
-
+from django.contrib.auth.models import User
+from rest_framework.authtoken.models import Token
 from rest_framework import serializers
-# from .models import Parameter, Company, ParameterTree, Report, ReportVersion, ReportResult, sub_questionsModel, \
-#     questionsModel, insideFormModel
-
 from .models import Player, FormapiParameter, Parameter, MainData, Report, ParameterTree, ReportVersion
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'password']
+
+    def create(self, validated_data):
+        user = User.objects.create_user(**validated_data)
+        print(user)
+        Token.objects.create(user=user)
+        return user
 
 
 class PlayerSerializer(serializers.ModelSerializer):
@@ -116,7 +126,7 @@ class ReportVersionGetSerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = ['id']
 
-
+# ignore
 class ReportVersionPostSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):

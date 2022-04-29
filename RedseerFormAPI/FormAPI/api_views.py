@@ -1,10 +1,18 @@
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, CreateAPIView, ListAPIView
-
+from django.contrib.auth.models import User
+from rest_framework import viewsets
 from . import serializers, models
 from rest_framework.response import Response
 import calendar
 import datetime
 from datetime import date, timedelta
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = serializers.UserSerializer
 
 
 class ParameterLCView(ListCreateAPIView):
@@ -27,42 +35,6 @@ class PlayerLCView(ListCreateAPIView):
 class ParameterTreeLCView(ListCreateAPIView):
     serializer_class = serializers.ParameterTreeSerializer
     queryset = models.ParameterTree.objects
-
-
-# class ReportResultLCView(ListCreateAPIView):
-#     serializer_class = serializers.ReportResultSerializer
-#     queryset = models.MainData.objects
-
-
-#
-#
-# class CompanyRUDView(RetrieveUpdateDestroyAPIView):
-#     serializer_class = serializers.CompanySerializer
-#     queryset = models.Company.objects
-#     lookup_field = "id"
-#     lookup_url_kwarg = "id"
-#
-#
-# class ParameterTreeLCView(ListCreateAPIView):
-#     serializer_class = serializers.ParameterTreeSerializer
-#     queryset = models.ParameterTree.objects
-#
-#     def create(self, request, *args, **kwargs):
-#         data = request.data
-#         new_parametertree = models.ParameterTree.objects.create(summate=data['summate'], question=data['question'])
-#         new_parametertree.save()
-#         for param in data['sub_questions']:
-#             parameter_obj = models.Parameter.objects.get(id=param['id'])
-#             new_parametertree.parameters.add(parameter_obj)
-#         serializer = serializers.ParameterTreeSerializer(new_parametertree)
-#         return Response(serializer.data)
-#
-#
-# class ParameterTreeRUDView(RetrieveUpdateDestroyAPIView):
-#     serializer_class = serializers.ParameterTreeSerializer
-#     queryset = models.ParameterTree.objects
-#     lookup_field = "id"
-#     lookup_url_kwarg = "id"
 
 
 class ReportLCView(ListCreateAPIView):
@@ -90,6 +62,7 @@ class ReportLCView(ListCreateAPIView):
 #     queryset = models.Report.objects
 #     lookup_field = "id"
 #     lookup_url_kwarg = "id"
+
 
 # ignore
 class ReportVersionLCView(ListCreateAPIView):
@@ -140,6 +113,8 @@ class ReportVersionLCView(ListCreateAPIView):
 
 
 class ReportVersionLView(ListAPIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
     serializer_class = serializers.ReportVersionGetSerializer
     queryset = models.ReportVersion.objects
 
@@ -195,8 +170,11 @@ class ReportVersionCView(CreateAPIView):
         serializer = serializers.ReportVersionSerializer(new_report_ver)
         return Response(serializer.data)
 
+
 # # wont work if you dont have lookup field id defined by you make id auto field
 class ReportVersionRUDView(RetrieveUpdateDestroyAPIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
     serializer_class = serializers.ReportVersionSerializer
     queryset = models.ReportVersion.objects
     lookup_field = "id"
@@ -236,71 +214,3 @@ class ReportResultLCView(ListCreateAPIView):
         new_result_entry.save()
         serializer = serializers.ReportResultSerializer(new_result_entry)
         return Response(serializer.data)
-#
-#
-# class ReportResultRUDView(RetrieveUpdateDestroyAPIView):
-#     serializer_class = serializers.ReportResultSerializer
-#     queryset = models.ReportResult.objects
-#     lookup_field = "id"
-#     lookup_url_kwarg = "id"
-#
-#
-# class SubQuestionLCView(ListCreateAPIView):
-#     serializer_class = serializers.SubQuestionSerializer
-#     queryset = models.sub_questionsModel.objects
-#
-#
-# class SubQuestionRUDView(RetrieveUpdateDestroyAPIView):
-#     serializer_class = serializers.SubQuestionSerializer
-#     queryset = models.sub_questionsModel.objects
-#     lookup_field = "id"
-#     lookup_url_kwarg = "id"
-#
-#
-# class QuestionLCView(ListCreateAPIView):
-#     serializer_class = serializers.QuestionSerializer
-#     queryset = models.questionsModel.objects
-#
-#     def create(self, request, *args, **kwargs):
-#         data = request.data
-#         new_question = models.questionsModel.objects.create(aggregate=data["aggregate"], question=data["question"])
-#         new_question.save()
-#         for sub in data["sub_questions"]:
-#             sub_question_obj = models.sub_questionsModel.objects.get(current_value=sub["current_value"],
-#                                                                      last_value=sub["last_value"],
-#                                                                      sub_question=sub["sub_question"])
-#             new_question.sub_questions.add(sub_question_obj)
-#         serializer = serializers.QuestionSerializer(new_question)
-#         return Response(serializer.data)
-#
-#
-# class QuestionRUDView(RetrieveUpdateDestroyAPIView):
-#     serializer_class = serializers.QuestionSerializer
-#     queryset = models.questionsModel.objects
-#     lookup_field = "id"
-#     lookup_url_kwarg = "id"
-#
-#
-# class insideFormLCView(ListCreateAPIView):
-#     serializer_class = serializers.insideFormSerializer
-#     queryset = models.insideFormModel.objects
-#
-#     def create(self, request, *args, **kwargs):
-#         data = request.data
-#         new_insideForm = models.insideFormModel.objects.create(company=data['company'],
-#                                                                deadline_days=data['deadline_days'],
-#                                                                filled_count=data['filled_count'],
-#                                                                name=data['name'], question_count=data['question_count'],
-#                                                                schedule=data['schedule'],
-#                                                                is_submitted=data['is_submitted'],
-#                                                                current_instance=data['current_instance'])
-#         new_insideForm.save()
-#         for i in data['questions']:
-#             # print(i['sub_questions'][0])
-#             # questions_obj = models.questionsModel.objects.get(aggregate=i['aggregate'], question=i['question'],
-#             #                                                   sub_questions=i['sub_questions'][0])
-#             questions_obj = models.questionsModel.objects.get(id=i['id'])
-#             new_insideForm.questions.add(questions_obj)
-#             serializer = serializers.insideFormSerializer(new_insideForm)
-#         return Response(serializer.data)
-#

@@ -1,11 +1,10 @@
-# from .api_views import ParameterRUDView, ParameterLCView, CompanyRUDView, CompanyLCView, ParameterTreeLCView, \
-#     ParameterTreeRUDView, ReportLCView, ReportRUDView, ReportVersionLCView, ReportVersionRUDView, ReportResultLCView, \
-#     ReportResultRUDView, SubQuestionRUDView, SubQuestionLCView, QuestionLCView, QuestionRUDView, insideFormLCView
-#
 from .api_views import PlayerLCView, ParameterLCView, ReportResultLCView, ReportLCView, ParameterTreeLCView,\
-    ReportVersionRUDView, ReportVersionLView, ReportVersionCView
-
+    ReportVersionRUDView, ReportVersionLView, ReportVersionCView, UserViewSet
+from rest_framework import routers
 from django.urls import path, include
+
+router = routers.DefaultRouter()
+router.register('users', UserViewSet)
 
 parameter_urls = [
     path("", ParameterLCView.as_view(), name="lc"),
@@ -53,6 +52,7 @@ reportresult_urls = [
 # ]
 #
 urlpatterns = [
+    path('', include(router.urls)),
     path("player/", include((player_urls, "player"), namespace="player")),
     path("parameter/", include((parameter_urls, "parameter"), namespace="parameter")),
     path("parametertree/", include((parametertree_urls, "parametertree"), namespace="parametertree")),
