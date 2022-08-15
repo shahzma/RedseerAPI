@@ -6,6 +6,7 @@ from rest_framework.response import Response
 import calendar
 import datetime
 from datetime import date, timedelta
+from dateutil import parser
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 
@@ -127,20 +128,20 @@ class ReportVersionCView(CreateAPIView):
         data = request.data
         report_obj = models.Report.objects.get(id=data['id'])
         curr_instance = data['current_instance']
+        time = curr_instance['created_at']
+        date_time = parser.parse(time.split('T')[0])
         company_obj = models.Player.objects.get(player_name=data['company'])
         # new_report_ver = models.ReportVersion.objects.create(name=data["name"], report=report_obj, company=data["company"])
         try:
-            #check wrt instance id instead
-            # new_report_ver = models.ReportVersion.objects.get(name=data["name"], report=report_obj, company=data["company"])
             new_report_ver = models.ReportVersion.objects.get(id=curr_instance['id'])
             new_report_ver.is_submitted = data['is_submitted']
             new_report_ver.filled_count = data['filled_count']
-            print('cview only exists')
             # update code for reportresult
             if new_report_ver:
                 new_report_ver.save()
-                end_date = date.today().replace(day=1) - timedelta(days=1)
-                start_date = date.today().replace(day=1) - timedelta(days=end_date.day)
+                end_date = date_time.date().replace(day=1) - timedelta(days=1)
+                start_date = date_time.date().replace(day=1) - timedelta(days=end_date.day)
+                print('st=', start_date, end_date)
                 for i in data['questions']:
                     parametertree_obj = models.ParameterTree.objects.get(id=i['id'])
                     for j in i['sub_questions']:

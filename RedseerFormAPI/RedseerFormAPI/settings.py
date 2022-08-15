@@ -97,6 +97,18 @@ DATABASES = {
     }
 }
 
+# use for prod
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'content_data',
+#         'USER': 'redroot',
+#         'PASSWORD': 'seer#123',
+#         'HOST': 'redmysql.mysql.database.azure.com',
+#         'PORT': '3306',
+#     }
+# }
+
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
 

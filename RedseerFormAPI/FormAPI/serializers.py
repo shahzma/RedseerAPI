@@ -33,14 +33,6 @@ class ParameterSerializer(serializers.ModelSerializer):
         fields = ['id', 'sub_question']
         read_only_fields = ['id', 'parameter_id']
 
-
-# class ReportResultSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = MainData
-#         fields = '__all__'
-#         read_only_field = ['id']
-
-
 class ParameterTreeSerializer(serializers.ModelSerializer):
     aggregate = serializers.BooleanField(source='summate')
     sub_questions = ParameterSerializer(source='parameters', many=True, read_only=True)
