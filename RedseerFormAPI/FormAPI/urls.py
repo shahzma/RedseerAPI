@@ -1,5 +1,5 @@
 from .api_views import PlayerLCView, ParameterLCView, ReportResultLCView, ReportLCView, ParameterTreeLCView,\
-    ReportVersionRUDView, ReportVersionLView, ReportVersionCView, UserViewSet
+    ReportVersionRUDView, ReportVersionLView, ReportVersionCView, UserViewSet, ReportVersionIDView,QuestionIDView
 from rest_framework import routers
 from django.urls import path, include
 
@@ -36,6 +36,15 @@ formresult_urls = [
 reportresult_urls = [
     path("", ReportResultLCView.as_view(), name="lc"),
 ]
+
+formID_urls = [
+    path("", ReportVersionIDView.as_view(), name="lc"),
+]
+
+questionID_urls = [
+    path("", QuestionIDView.as_view(), name="lc"),
+]
+
 #
 # subquestions_urls = [
 #     path("", SubQuestionLCView.as_view(), name="lc"),
@@ -60,6 +69,8 @@ urlpatterns = [
     path("forms/", include((reportversion_urls, "reportversion"), namespace="reportversion")),
     path("formresult/", include((formresult_urls, "formresult"), namespace="formresult")),
     path("reportresult/", include((reportresult_urls, "reportresult"), namespace="reportresult")),
+    path("formID/", include((formID_urls, "formID"), namespace="formID")),
+    path("questionID/", include((questionID_urls, "questionID"), namespace="questionID")),
     # path("subquestions/", include((subquestions_urls, "subquestions"), namespace="subquestions")),
     # path("questions/", include((questions_urls, "questions"), namespace="questions")),
     # path("insideForm/", include((insideForm_urls, "insideForm"), namespace="insideForm"))

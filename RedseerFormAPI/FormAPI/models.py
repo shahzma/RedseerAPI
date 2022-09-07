@@ -1,6 +1,10 @@
 import uuid
 import django
 from django.db import models
+from django.dispatch import receiver
+from django.db.models.signals import post_save, pre_save
+from django.core.mail import EmailMessage
+from django.conf import settings
 import calendar
 import datetime
 from datetime import date
@@ -95,6 +99,8 @@ class ReportVersion(models.Model):
     report = models.ForeignKey(Report, on_delete=models.CASCADE)
     filled_count = models.IntegerField(default=0)
     is_submitted = models.BooleanField(default=False)
+    approved_by_level = models.IntegerField(default=1)
+    max_level_needed = models.IntegerField(default=5)
     date_created = models.DateTimeField(default=django.utils.timezone.now)
 
     class Meta:
@@ -142,6 +148,7 @@ class ReportVersion(models.Model):
 #         managed = True
 #         db_table = "main_data"
 
+
 #reportresult
 class MainData(models.Model):
     id = models.AutoField(auto_created=True, primary_key=True)
@@ -158,6 +165,48 @@ class MainData(models.Model):
     class Meta:
         managed = False
         db_table = 'main_data'
+
+
+class MainDataProd(models.Model):
+    id = models.AutoField(auto_created=True, primary_key=True)
+    player = models.ForeignKey('Player', models.DO_NOTHING, blank=True, null=True)
+    start_date = models.DateField(blank=True, null=True)
+    end_date = models.DateField(blank=True, null=True)
+    parameter = models.ForeignKey('Parameter', models.DO_NOTHING, blank=True, null=True)
+    value = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    date_created = models.DateField(blank=True, null=True)
+    source = models.CharField(max_length=45, blank=True, null=True)
+    parametertree = models.ForeignKey(ParameterTree, on_delete=models.PROTECT, default=1)
+    report_version = models.ForeignKey(ReportVersion, on_delete=models.PROTECT, default=1)
+
+    class Meta:
+        managed = False
+        db_table = 'main_data_prod'
+
+
+@receiver(pre_save, sender=ReportVersion)
+def notify_denial_by_email(sender, instance, **kwargs):
+    previous = ReportVersion.objects.filter(id=instance.id)
+    if previous[0].is_submitted != instance.is_submitted:
+        msg = EmailMessage(
+            'WebForm Denied',
+            f'Welcome Back , <br><br> Your Webform【{previous[0].name}】was denied',
+            settings.EMAIL_HOST_USER,
+            ['shahzmaaalif@gmail.com']
+        )
+        msg.content_subtype = "html"
+        mail_status = msg.send()
+
+
+@receiver(post_save, sender=ReportVersion)
+def fill_main_data_prod(sender, instance, created, **kwargs):
+    if instance.approved_by_level == instance.max_level_needed:
+        qs_main_data = MainData.objects.filter(report_version=instance.id)
+        for i in qs_main_data:
+            i_dict = i.__dict__
+            i_dict.pop('id')  # remove primary key from dict
+            i_dict.pop('_state')
+            MainDataProd.objects.create(**i_dict)
 
 
 

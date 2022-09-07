@@ -5,6 +5,7 @@ from . import serializers, models
 from rest_framework.response import Response
 import calendar
 import datetime
+from rest_framework.views import status
 from datetime import date, timedelta
 from dateutil import parser
 from rest_framework.authentication import TokenAuthentication
@@ -215,3 +216,30 @@ class ReportResultLCView(ListCreateAPIView):
         new_result_entry.save()
         serializer = serializers.ReportResultSerializer(new_result_entry)
         return Response(serializer.data)
+
+
+class ReportVersionIDView(CreateAPIView):
+
+    def post(self, request):
+        start_date = request.data.get('start_date')
+        start_date = datetime.datetime.strptime(start_date, '%d/%m/%y').date()
+        end_date = request.data.get('end_date')
+        end_date = datetime.datetime.strptime(end_date, '%d/%m/%y').date()
+        company_name = request.data.get('company_name')
+        report_version = models.ReportVersion.objects.filter(company = company_name, date_created__range=[start_date,end_date])[0]
+        return Response({'report_version_id': report_version.id, 'report_id':report_version.report_id}, status=status.HTTP_200_OK)
+
+
+class QuestionIDView(CreateAPIView):
+
+    def post(self, request):
+        report_version_id = request.data.get('report_version_id')
+        question_name = request.data.get('question_name')
+        report_id = models.ReportVersion.objects.filter(id=report_version_id)[0].report_id
+        questions = models.ParameterTree.objects.filter(report=report_id)
+        question_id = 0
+        for i in questions:
+            if i.question == question_name:
+                question_id = i.id
+                break
+        return Response({'question_id': question_id}, status=status.HTTP_200_OK)
