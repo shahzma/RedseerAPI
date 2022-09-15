@@ -99,6 +99,7 @@ class ReportVersion(models.Model):
     report = models.ForeignKey(Report, on_delete=models.CASCADE)
     filled_count = models.IntegerField(default=0)
     is_submitted = models.BooleanField(default=False)
+    email = models.CharField(max_length=1000, default=None)
     approved_by_level = models.IntegerField(default=1)
     max_level_needed = models.IntegerField(default=5)
     date_created = models.DateTimeField(default=django.utils.timezone.now)

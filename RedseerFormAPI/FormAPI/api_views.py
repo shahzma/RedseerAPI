@@ -137,6 +137,7 @@ class ReportVersionCView(CreateAPIView):
             new_report_ver = models.ReportVersion.objects.get(id=curr_instance['id'])
             new_report_ver.is_submitted = data['is_submitted']
             new_report_ver.filled_count = data['filled_count']
+            new_report_ver.email = data['email']
             # update code for reportresult
             if new_report_ver:
                 new_report_ver.save()
@@ -226,8 +227,16 @@ class ReportVersionIDView(CreateAPIView):
         end_date = request.data.get('end_date')
         end_date = datetime.datetime.strptime(end_date, '%d/%m/%y').date()
         company_name = request.data.get('company_name')
+        question_name = request.data.get('question_name')
         report_version = models.ReportVersion.objects.filter(company = company_name, date_created__range=[start_date,end_date])[0]
-        return Response({'report_version_id': report_version.id, 'report_id':report_version.report_id}, status=status.HTTP_200_OK)
+        report_id = report_version.report_id
+        questions = models.ParameterTree.objects.filter(report=report_id)
+        question_id = 107
+        for i in questions:
+            if i.question == question_name:
+                question_id = i.id
+                break
+        return Response({'report_version_id': report_version.id, 'question_id': question_id}, status=status.HTTP_200_OK)
 
 
 class QuestionIDView(CreateAPIView):
