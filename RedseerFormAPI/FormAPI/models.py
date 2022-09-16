@@ -187,17 +187,23 @@ class MainDataProd(models.Model):
 
 @receiver(pre_save, sender=ReportVersion)
 def notify_denial_by_email(sender, instance, **kwargs):
+    # previous here refers to current instance of row in reportversion table
     previous = ReportVersion.objects.filter(id=instance.id)
+    print('email will be sent')
     if previous[0].is_submitted != instance.is_submitted:
-        msg = EmailMessage(
-            'WebForm Denied',
-            f'Welcome Back , <br><br> Your Webform【{previous[0].name}】was denied',
-            settings.EMAIL_HOST_USER,
-            ['shahzmaaalif@gmail.com']
-        )
-        msg.content_subtype = "html"
-        mail_status = msg.send()
-
+        print('check submit condition')
+        if previous[0].email:
+            print(previous[0].email)
+            msg = EmailMessage(
+                'WebForm Denied',
+                f'Welcome Back , <br><br> Your Webform【{previous[0].name}】was denied',
+                settings.EMAIL_HOST_USER,
+                [previous[0].email]
+            )
+            msg.content_subtype = "html"
+            mail_status = msg.send()
+        else:
+            print('no email present')
 
 @receiver(post_save, sender=ReportVersion)
 def fill_main_data_prod(sender, instance, created, **kwargs):
