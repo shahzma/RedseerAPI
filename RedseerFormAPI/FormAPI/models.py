@@ -99,10 +99,14 @@ class ReportVersion(models.Model):
     report = models.ForeignKey(Report, on_delete=models.CASCADE)
     filled_count = models.IntegerField(default=0)
     is_submitted = models.BooleanField(default=False)
+
     email = models.CharField(max_length=1000, default=None)
     approved_by_level = models.IntegerField(default=1)
     max_level_needed = models.IntegerField(default=5)
     date_created = models.DateTimeField(default=django.utils.timezone.now)
+
+    def __str__(self):
+        return self.name
 
     class Meta:
         managed = False
@@ -168,6 +172,18 @@ class MainData(models.Model):
         db_table = 'main_data'
 
 
+class AuditTable(models.Model):
+    user = models.CharField(max_length=1000, default=None)  #email
+    user_level = models.IntegerField(default=1)
+    date = models.DateTimeField(auto_now_add=True, blank=True)
+    action = models.BooleanField(default=False)
+    form_id = models.ForeignKey(ReportVersion, on_delete=models.PROTECT, default=1)
+
+    class Meta:
+        managed = True
+        db_table = 'audit_table'
+
+
 class MainDataProd(models.Model):
     id = models.AutoField(auto_created=True, primary_key=True)
     player = models.ForeignKey('Player', models.DO_NOTHING, blank=True, null=True)
@@ -215,6 +231,15 @@ def fill_main_data_prod(sender, instance, created, **kwargs):
             i_dict.pop('_state')
             MainDataProd.objects.create(**i_dict)
 
+
+@receiver(post_save, sender=ReportVersion)
+def fill_audit_table(sender, instance, created, **kwargs):
+    if instance.approved_by_level == 0:
+        user_level = 1
+        user =instance.email
+        action = True
+        form_id = ReportVersion.objects.filter(id=instance.id)[0]
+        AuditTable.objects.create(user = user, user_level = user_level, action = action, form_id = form_id)
 
 
 #

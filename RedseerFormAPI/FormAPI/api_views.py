@@ -252,3 +252,29 @@ class QuestionIDView(CreateAPIView):
                 question_id = i.id
                 break
         return Response({'question_id': question_id}, status=status.HTTP_200_OK)
+
+
+class AuditTableLCView(ListCreateAPIView):
+    serializer_class = serializers.AuditTableSerializer
+    queryset = models.AuditTable.objects
+
+    def get_queryset(self):
+        today = datetime.date.today()
+        self.queryset = self.queryset.filter(date__year=today.year, date__month=today.month)
+        qs = self.queryset
+        form_id = self.request.query_params.get('form_id')
+        print(form_id)
+        if form_id:
+            qs = qs.filter(form_id=form_id)
+
+        return qs
+
+
+class AuditReportVersionLCView(ListCreateAPIView):
+    serializer_class = serializers.AuditReportVersionSerializer
+    queryset = models.ReportVersion.objects
+
+    def get_queryset(self):
+        today = datetime.date.today()
+        self.queryset = self.queryset.filter(date_created__year=today.year, date_created__month=today.month)
+        return self.queryset

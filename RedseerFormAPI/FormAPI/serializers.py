@@ -1,8 +1,10 @@
 import datetime
 from django.contrib.auth.models import User
+from datetime import date, timedelta
 from rest_framework.authtoken.models import Token
 from rest_framework import serializers
-from .models import Player, FormapiParameter, Parameter, MainData, Report, ParameterTree, ReportVersion
+from .models import Player, FormapiParameter, Parameter, MainData, Report, ParameterTree, ReportVersion, AuditTable
+from random import randrange
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -199,6 +201,58 @@ class ReportVersionSerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = ['id']
 
+
+class AuditTableSerializer(serializers.ModelSerializer):
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep['form_name'] = instance.form_id.name
+        return rep
+
+    class Meta:
+        model = AuditTable
+        fields = "__all__"
+
+
+class AuditReportVersionSerializer(serializers.ModelSerializer):
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep.pop('name')
+        rep.pop('filled_count')
+        rep.pop('is_submitted')
+        last_date = datetime.date.today().replace(day= 1)+ timedelta(days=randrange(20))
+        rep['last_date'] = last_date
+        rep['sector'] = Report.objects.filter(id = instance.report_id)[0].name
+        rep['sub-sector'] = 'Industry'
+        rep['submission_attempt_sub_maker'] = len(AuditTable.objects.filter(form_id = instance.id , user_level = 1))
+        rep['submission_attempt_maker'] = len(AuditTable.objects.filter(form_id = instance.id, user_level = 2))
+        rep['submission_attempt_checker'] = len(AuditTable.objects.filter(form_id = instance.id, user_level = 3))
+        rep['submission_attempt_reviewer'] = len(AuditTable.objects.filter(form_id = instance.id, user_level = 4))
+        final_reviewer_arr = AuditTable.objects.filter(form_id = instance.id, user_level = 5)
+        rep['submission_attempt_final_reviewer'] = len(AuditTable.objects.filter(form_id = instance.id, user_level = 5))
+        submission_date = last_date
+        if (rep['submission_attempt_final_reviewer']>0):
+            submission_date = final_reviewer_arr[-1].date.date()
+            if submission_date<=last_date:
+                status = 'Ontime'
+            else:
+                status = 'Delayed'
+        else:
+            status = 'Delayed'
+        rep['status']=status
+        delay_days = 0
+        if status=='Delayed':
+            if submission_date>last_date:
+                delay_days = submission_date-last_date
+            else:
+                delay_days = datetime.date.today()-last_date
+        rep['delay_days']=delay_days
+        return rep
+
+    class Meta:
+        model = ReportVersion
+        fields = "__all__"
 
 # class SubQuestionSerializer(serializers.ModelSerializer):
 #     class Meta:

@@ -1,5 +1,6 @@
 from .api_views import PlayerLCView, ParameterLCView, ReportResultLCView, ReportLCView, ParameterTreeLCView,\
-    ReportVersionRUDView, ReportVersionLView, ReportVersionCView, UserViewSet, ReportVersionIDView,QuestionIDView
+    ReportVersionRUDView, ReportVersionLView, ReportVersionCView, UserViewSet, ReportVersionIDView,QuestionIDView,\
+    AuditTableLCView, AuditReportVersionLCView
 from rest_framework import routers
 from django.urls import path, include
 
@@ -45,6 +46,14 @@ questionID_urls = [
     path("", QuestionIDView.as_view(), name="lc"),
 ]
 
+audittable_urls = [
+    path("", AuditTableLCView.as_view(), name='lc')
+]
+
+atrv_urls = [
+    path("", AuditReportVersionLCView.as_view(), name='lc')
+]
+
 #
 # subquestions_urls = [
 #     path("", SubQuestionLCView.as_view(), name="lc"),
@@ -71,6 +80,8 @@ urlpatterns = [
     path("reportresult/", include((reportresult_urls, "reportresult"), namespace="reportresult")),
     path("formID/", include((formID_urls, "formID"), namespace="formID")),
     path("questionID/", include((questionID_urls, "questionID"), namespace="questionID")),
+    path("audittable/", include((audittable_urls, "audittable"), namespace="audittable")),
+    path("atrv/", include((atrv_urls, "atrv"), namespace="atrv")),
     # path("subquestions/", include((subquestions_urls, "subquestions"), namespace="subquestions")),
     # path("questions/", include((questions_urls, "questions"), namespace="questions")),
     # path("insideForm/", include((insideForm_urls, "insideForm"), namespace="insideForm"))
