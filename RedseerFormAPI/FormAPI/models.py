@@ -239,7 +239,7 @@ def fill_audit_table(sender, instance, created, **kwargs):
         user =instance.email
         action = True
         form_id = ReportVersion.objects.filter(id=instance.id)[0]
-        AuditTable.objects.create(user = user, user_level = user_level, action = action, form_id = form_id)
+        AuditTable.objects.create(user=user, user_level=user_level, action=action, form_id = form_id)
 
 
 #

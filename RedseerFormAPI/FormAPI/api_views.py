@@ -260,13 +260,15 @@ class AuditTableLCView(ListCreateAPIView):
 
     def get_queryset(self):
         today = datetime.date.today()
-        self.queryset = self.queryset.filter(date__year=today.year, date__month=9)
+        query_params = self.request.query_params
+        month = query_params.get('month')
+        if month:
+            self.queryset = self.queryset.filter(date__year=today.year, date__month=month)
         qs = self.queryset
         form_id = self.request.query_params.get('form_id')
         print(form_id)
         if form_id:
             qs = qs.filter(form_id=form_id)
-
         return qs
 
 

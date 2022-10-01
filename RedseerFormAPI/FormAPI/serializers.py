@@ -222,7 +222,7 @@ class AuditReportVersionSerializer(serializers.ModelSerializer):
         rep.pop('name')
         rep.pop('filled_count')
         rep.pop('is_submitted')
-        last_date = datetime.date.today().replace(day= 1)+ timedelta(days=randrange(20))
+        last_date = datetime.date.today().replace(day=9)
         rep['last_date'] = last_date
         rep['sector'] = Report.objects.filter(id = instance.report_id)[0].name
         rep['sub-sector'] = 'Industry'
@@ -233,7 +233,7 @@ class AuditReportVersionSerializer(serializers.ModelSerializer):
         final_reviewer_arr = AuditTable.objects.filter(form_id = instance.id, user_level = 5)
         rep['submission_attempt_final_reviewer'] = len(AuditTable.objects.filter(form_id = instance.id, user_level = 5))
         submission_date = last_date
-        if (rep['submission_attempt_final_reviewer']>0):
+        if ((rep['submission_attempt_final_reviewer'])>0):
             status = 'Ontime'
             # submission_date = final_reviewer_arr[-1].date.date()
             # if submission_date<=last_date:
@@ -245,10 +245,11 @@ class AuditReportVersionSerializer(serializers.ModelSerializer):
         rep['status']=status
         delay_days = 0
         if status=='Delayed':
-            if submission_date>last_date:
-                delay_days = submission_date-last_date
-            else:
-                delay_days = datetime.date.today()-last_date
+            delay_days = 31
+            # if submission_date>last_date:
+            #     delay_days = submission_date-last_date
+            # else:
+            #     delay_days = datetime.date.today()-last_date
         rep['delay_days']=delay_days
         return rep
 
