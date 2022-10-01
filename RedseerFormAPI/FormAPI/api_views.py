@@ -260,7 +260,7 @@ class AuditTableLCView(ListCreateAPIView):
 
     def get_queryset(self):
         today = datetime.date.today()
-        self.queryset = self.queryset.filter(date__year=today.year, date__month=today.month)
+        self.queryset = self.queryset.filter(date__year=today.year, date__month=9)
         qs = self.queryset
         form_id = self.request.query_params.get('form_id')
         print(form_id)
@@ -276,5 +276,19 @@ class AuditReportVersionLCView(ListCreateAPIView):
 
     def get_queryset(self):
         today = datetime.date.today()
-        self.queryset = self.queryset.filter(date_created__year=today.year, date_created__month=today.month)
+        year = today.year
+        query_params = self.request.query_params
+        month = query_params.get('month')
+        company = query_params.get('company')
+        if month:
+            if company:
+                self.queryset = self.queryset.filter(date_created__year=today.year, date_created__month=month,
+                                                     company=company)
+            else:
+                self.queryset = self.queryset.filter(date_created__year=today.year, date_created__month=month)
+        else:
+            if company:
+                self.queryset = self.queryset.filter(company = company)
+            else:
+                self.queryset = self.queryset.filter(date_created__year=today.year, date_created__month=9)
         return self.queryset

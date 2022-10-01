@@ -207,6 +207,7 @@ class AuditTableSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         rep = super().to_representation(instance)
         rep['form_name'] = instance.form_id.name
+        rep['form_date'] = instance.date.date()
         return rep
 
     class Meta:
@@ -233,11 +234,12 @@ class AuditReportVersionSerializer(serializers.ModelSerializer):
         rep['submission_attempt_final_reviewer'] = len(AuditTable.objects.filter(form_id = instance.id, user_level = 5))
         submission_date = last_date
         if (rep['submission_attempt_final_reviewer']>0):
-            submission_date = final_reviewer_arr[-1].date.date()
-            if submission_date<=last_date:
-                status = 'Ontime'
-            else:
-                status = 'Delayed'
+            status = 'Ontime'
+            # submission_date = final_reviewer_arr[-1].date.date()
+            # if submission_date<=last_date:
+            #     status = 'Ontime'
+            # else:
+            #     status = 'Delayed'
         else:
             status = 'Delayed'
         rep['status']=status
