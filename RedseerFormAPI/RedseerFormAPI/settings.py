@@ -158,7 +158,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'shahzmaalif@gmail.com'
-EMAIL_HOST_PASSWORD = 'eteejcmriatqnzdw'
+EMAIL_HOST_PASSWORD = 'mxwbbcedjobccudu'
 
 
 # EMAIL_HOST = 'outlook.office365.com'

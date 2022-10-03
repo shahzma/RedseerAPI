@@ -222,7 +222,8 @@ class AuditReportVersionSerializer(serializers.ModelSerializer):
         rep.pop('name')
         rep.pop('filled_count')
         rep.pop('is_submitted')
-        last_date = datetime.date.today().replace(day=9)
+        date_created = instance.date_created.date()
+        last_date = date_created.replace(day=9)
         rep['last_date'] = last_date
         rep['sector'] = Report.objects.filter(id = instance.report_id)[0].name
         rep['sub-sector'] = 'Industry'
@@ -233,24 +234,26 @@ class AuditReportVersionSerializer(serializers.ModelSerializer):
         final_reviewer_arr = AuditTable.objects.filter(form_id = instance.id, user_level = 5)
         rep['submission_attempt_final_reviewer'] = len(AuditTable.objects.filter(form_id = instance.id, user_level = 5))
         submission_date = last_date
-        if ((rep['submission_attempt_final_reviewer'])>0):
-            status = 'Ontime'
+        if (final_reviewer_arr):
             # submission_date = final_reviewer_arr[-1].date.date()
-            # if submission_date<=last_date:
-            #     status = 'Ontime'
-            # else:
-            #     status = 'Delayed'
+            submission_date = final_reviewer_arr.reverse()[0].date.date()
+            if submission_date<=last_date:
+                status = 'Ontime'
+            else:
+                status = 'Delayed'
         else:
             status = 'Delayed'
         rep['status']=status
         delay_days = 0
         if status=='Delayed':
-            delay_days = 31
-            # if submission_date>last_date:
-            #     delay_days = submission_date-last_date
-            # else:
-            #     delay_days = datetime.date.today()-last_date
+            # delay_days = 31
+            if submission_date>last_date:
+                delay_days = (submission_date-last_date).days
+                # delay_days = 2
+            else:
+                delay_days = 31
         rep['delay_days']=delay_days
+        rep['submission_date'] = submission_date
         return rep
 
     class Meta:

@@ -285,12 +285,12 @@ class AuditReportVersionLCView(ListCreateAPIView):
         if month:
             if company:
                 self.queryset = self.queryset.filter(date_created__year=today.year, date_created__month=month,
-                                                     company=company)
+                                                     company__contains=company)
             else:
                 self.queryset = self.queryset.filter(date_created__year=today.year, date_created__month=month)
         else:
             if company:
-                self.queryset = self.queryset.filter(company = company)
+                self.queryset = self.queryset.filter(company__contains = company)
             else:
-                self.queryset = self.queryset.filter(date_created__year=today.year, date_created__month=9)
+                self.queryset = self.queryset.filter(date_created__year=today.year, date_created__month=today.month-1)
         return self.queryset
