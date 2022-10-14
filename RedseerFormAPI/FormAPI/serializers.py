@@ -111,6 +111,7 @@ class ReportVersionGetSerializer(serializers.ModelSerializer):
         rep['schedule'] = "monthly"  # get it from report object if there are some whanges wrt schedult
         rep['deadline_days'] = 30  # get it from report object if  changes .Question count from report version or report
         rep['industry_name'] = curr_report_object.name
+        # rep['excel_link'] = Player.objects.filter(player_name=instance.company)[0].excel_link
         # rep['id'] = rep['report']
         # rep = {**rep_details, **rep}
         return rep
@@ -193,6 +194,7 @@ class ReportVersionSerializer(serializers.ModelSerializer):
         # print(rep_result)
         rep['industry_name'] = Report.objects.filter(id=instance.report.id)[0].name
         rep['id'] = rep_details['id']
+        rep['excel_link'] = Player.objects.filter(player_name=instance.company)[0].excel_link
         rep = {**rep_details, **rep}
         return rep
 
@@ -207,7 +209,7 @@ class AuditTableSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         rep = super().to_representation(instance)
         rep['form_name'] = instance.form_id.name
-        rep['form_date'] = instance.date.date()
+        rep['form_date'] = instance.date
         return rep
 
     class Meta:

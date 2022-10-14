@@ -5,6 +5,9 @@ from django.dispatch import receiver
 from django.db.models.signals import post_save, pre_save
 from django.core.mail import EmailMessage
 from django.conf import settings
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import firestore
 import calendar
 import datetime
 from datetime import date
@@ -15,6 +18,9 @@ from .apps import FormapiConfig as AppConfig
 # remove many to many from parameter tree and add  parent_parameter as foriegn key
 # parent_parameter-NAME
 
+cred = credentials.Certificate('/Users/shahzmaalif/Documents/GitHub/RedseerAPI/RedseerFormAPI/coeus-8be26-firebase-adminsdk-panol-ec5a6f11fd.json')
+firebase_admin.initialize_app(cred)
+db = firestore.client()
 
 class FormapiParameter(models.Model):
     parameter_id = models.AutoField(primary_key=True)
@@ -33,6 +39,7 @@ class Player(models.Model):
     player_id = models.AutoField(primary_key=True, auto_created=True)
     player_name = models.CharField(max_length=45)
     industry_id = models.IntegerField(default=3) #is caklled industry
+    excel_link = models.CharField(max_length=2000)
 
     class Meta:
         managed = False
@@ -217,6 +224,37 @@ def notify_denial_by_email(sender, instance, **kwargs):
                     f'Welcome Back , <br><br> Your Webform【{previous[0].name}】was denied',
                     settings.EMAIL_HOST_USER,
                     [previous[0].email]
+                )
+                msg.content_subtype = "html"
+                mail_status = msg.send()
+            else:
+                print('no email present')
+    except:
+        pass
+
+@receiver(pre_save, sender=ReportVersion)
+def notify_approval_by_email(sender, instance,**kwargs):
+    try:
+        previous = ReportVersion.objects.filter(id=instance.id)
+        if previous[0].approved_by_level + 1 == instance.approved_by_level:
+            user_ref = db.collection(u'users')
+            docs = user_ref.stream()
+            user_list = []
+            email_list = []
+            for doc in docs:
+                user_list.append(doc.to_dict())
+            for i in user_list:
+                assigned_rep = i.get('assigned_reports')
+                if assigned_rep:
+                    for j in assigned_rep:
+                        if j.get('level') == str(instance.approved_by_level+1) and j.get('report_id') == instance.report_id:
+                            email_list.append(i.get('email'))
+            if email_list:
+                msg = EmailMessage(
+                    'WebForm Available',
+                    f'Welcome Back , <br><br> New Webform【{instance.name}】is available for approval',
+                    settings.EMAIL_HOST_USER,
+                    email_list
                 )
                 msg.content_subtype = "html"
                 mail_status = msg.send()
