@@ -194,7 +194,11 @@ class ReportVersionSerializer(serializers.ModelSerializer):
         # print(rep_result)
         rep['industry_name'] = Report.objects.filter(id=instance.report.id)[0].name
         rep['id'] = rep_details['id']
-        rep['excel_link'] = Player.objects.filter(player_name=instance.company)[0].excel_link
+        print(Player.objects.filter(player_name=instance.company))
+        try:
+            rep['excel_link'] = Player.objects.filter(player_name=instance.company)[0].excel_link
+        except:
+            rep['excel_link'] = ''
         rep = {**rep_details, **rep}
         return rep
 
@@ -225,7 +229,8 @@ class AuditReportVersionSerializer(serializers.ModelSerializer):
         rep.pop('filled_count')
         rep.pop('is_submitted')
         date_created = instance.date_created.date()
-        last_date = date_created.replace(day=9)
+        last_date_day = Player.objects.filter(player_name=instance.company)[0].last_date_day
+        last_date = date_created.replace(day=last_date_day)
         rep['last_date'] = last_date
         rep['sector'] = Report.objects.filter(id = instance.report_id)[0].name
         rep['sub-sector'] = 'Industry'

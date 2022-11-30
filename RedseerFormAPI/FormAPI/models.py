@@ -8,9 +8,14 @@ from django.conf import settings
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
+from .service_utils import CalculatedParamFn
 import calendar
 import datetime
+import requests
+import json
 from datetime import date
+from dotenv import load_dotenv
+import os
 from .apps import FormapiConfig as AppConfig
 # Create your models here.
 
@@ -21,6 +26,7 @@ from .apps import FormapiConfig as AppConfig
 cred = credentials.Certificate('/Users/shahzmaalif/Documents/GitHub/RedseerAPI/RedseerFormAPI/coeus-8be26-firebase-adminsdk-panol-ec5a6f11fd.json')
 firebase_admin.initialize_app(cred)
 db = firestore.client()
+load_dotenv()
 
 class FormapiParameter(models.Model):
     parameter_id = models.AutoField(primary_key=True)
@@ -40,6 +46,7 @@ class Player(models.Model):
     player_name = models.CharField(max_length=45)
     industry_id = models.IntegerField(default=3) #is caklled industry
     excel_link = models.CharField(max_length=2000)
+    last_date_day = models.IntegerField(default=28, blank=True, null=True)
 
     class Meta:
         managed = False
@@ -57,7 +64,7 @@ class Parameter(models.Model):
         db_table = 'parameter'
 
 
-# mainquestion. unit = currency. aggretgate = summate
+# mainquestion. unit = currency. aggregate = summate
 class ParameterTree(models.Model):
     id = models.AutoField(primary_key=True, auto_created=True)
     question = models.CharField(max_length=255)
@@ -78,6 +85,7 @@ class Report(models.Model):
     question_count = models.IntegerField(default=24)
     companies = models.ManyToManyField(Player)
     question = models.ManyToManyField(ParameterTree)
+    max_level_needed = models.IntegerField(default=3)
 
     class Meta:
         managed = False
@@ -232,6 +240,7 @@ def notify_denial_by_email(sender, instance, **kwargs):
     except:
         pass
 
+
 @receiver(pre_save, sender=ReportVersion)
 def notify_approval_by_email(sender, instance,**kwargs):
     try:
@@ -263,9 +272,11 @@ def notify_approval_by_email(sender, instance,**kwargs):
     except:
         pass
 
+
 @receiver(post_save, sender=ReportVersion)
 def fill_main_data_prod(sender, instance, created, **kwargs):
-    if instance.approved_by_level == instance.max_level_needed:
+    max_level = Report.objects.filter(id=instance.report_id)[0].max_level_needed
+    if instance.approved_by_level == max_level:
         qs_main_data = MainData.objects.filter(report_version=instance.id)
         for i in qs_main_data:
             i_dict = i.__dict__
@@ -274,54 +285,93 @@ def fill_main_data_prod(sender, instance, created, **kwargs):
             MainDataProd.objects.create(**i_dict)
 
 
+# fill audit table when user 1st fills data. user data from patching is done directly by website.approved_by_level
+# should be 1 by default. We are not recoridng approved by level when 1st submit.need to disable when creating webform
 @receiver(post_save, sender=ReportVersion)
 def fill_audit_table(sender, instance, created, **kwargs):
-    if instance.approved_by_level == 0:
-        user_level = 1
-        user =instance.email
-        action = True
-        form_id = ReportVersion.objects.filter(id=instance.id)[0]
-        AuditTable.objects.create(user=user, user_level=user_level, action=action, form_id = form_id)
+    try:
+        if instance.approved_by_level == 1 and instance.date_created.date() != datetime.date.today():
+            user_level = 1
+            user =instance.email
+            action = True
+            form_id = ReportVersion.objects.filter(id=instance.id)[0]
+            AuditTable.objects.create(user=user, user_level=user_level, action=action, form_id = form_id)
+    except:
+        pass
 
 
-#
-#
-# # remove
-# class sub_questionsModel(models.Model):
-#     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
-#     current_value = models.IntegerField()
-#     last_value = models.IntegerField()
-#     sub_question = models.CharField(max_length=255)
-#
-#     class Meta:
-#         managed = True
-#         db_table = str(AppConfig.name) + "_" + "sub_questions"
-#
-# # remove
-# class questionsModel(models.Model):
-#     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
-#     aggregate = models.BooleanField(default=True)
-#     question = models.TextField()
-#     sub_questions = models.ManyToManyField(sub_questionsModel)
-#
-#     class Meta:
-#         managed = True
-#         db_table = str(AppConfig.name) + "_" + "questions"
-#
-# # remove?
-# class insideFormModel(models.Model):
-#     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
-#     company = models.CharField(max_length=255)
-#     deadline_days = models.IntegerField()
-#     filled_count = models.IntegerField()
-#     last_modified_date = models.DateTimeField(null=True, default=django.utils.timezone.now)
-#     name = models.CharField(max_length=255)
-#     question_count = models.IntegerField()
-#     schedule = models.CharField(max_length=255)
-#     is_submitted = models.BooleanField(default=True)
-#     current_instance = models.JSONField()
-#     questions = models.ManyToManyField(questionsModel)
-#
-#     class Meta:
-#         managed = True
-#         db_table = str(AppConfig.name) + "_" + "insideFormModel"
+@receiver(post_save, sender=ReportVersion)
+def refresh_power_bi(sender, instance, created, **kwargs):
+    try:
+        # refresh power bi. should run 1 time only so need to make changes to if condition
+        if instance.is_submitted and instance.approved_by_level == 1:
+            start_date = instance.date_created
+            end_date = instance.date_created
+            report_id = instance.report_id
+            player_id = Player.objects.filter(player_name=instance.company)[0]
+            try:
+                if report_id == 45:
+                    CalculatedParamFn.calc_script_eb2b(player_id, start_date, end_date)
+                if report_id == 46:
+                    CalculatedParamFn.calc_script_eb2bGrocery(player_id, start_date, end_date)
+                if report_id == 47:
+                    CalculatedParamFn.calc_script_eb2bElectronics(player_id, start_date, end_date)
+                if report_id == 48:
+                    CalculatedParamFn.calc_script_eb2bEPharma(player_id, start_date, end_date)
+                if report_id == 6:
+                    CalculatedParamFn.calc_script_csm(player_id, start_date, end_date)
+                if report_id == 5:
+                    CalculatedParamFn.calc_script_shortform(player_id, start_date, end_date)
+                if report_id == 1:
+                    CalculatedParamFn.calc_script_video(player_id, start_date, end_date)
+                if report_id == 4:
+                    CalculatedParamFn.calc_script_audio(player_id, start_date, end_date)
+                if report_id == 33:
+                    CalculatedParamFn.calc_script_rmg(player_id, start_date, end_date)
+                if report_id == 36:
+                    CalculatedParamFn.calc_script_usedCars(player_id, start_date, end_date)
+                if report_id == 40:
+                    CalculatedParamFn.calc_script_meatCore(player_id, start_date, end_date)
+                if report_id == 41:
+                    CalculatedParamFn.calc_script_meatMarketPlace(player_id, start_date, end_date)
+                if report_id == 42:
+                    CalculatedParamFn.calc_script_d2c(player_id, start_date, end_date)
+                if report_id == 28:
+                    CalculatedParamFn.calc_script_edtech(player_id, start_date, end_date)
+                if report_id == 43:
+                    CalculatedParamFn.calc_script_mobility(player_id, start_date, end_date)
+                if report_id == 19:
+                    CalculatedParamFn.calc_script_horizontals(player_id, start_date, end_date)
+                if report_id == 54:
+                    CalculatedParamFn.calc_script_foodtech(player_id, start_date, end_date)
+                if report_id == 25:
+                    CalculatedParamFn.calc_script_ehealth(player_id, start_date, end_date)
+            except:
+                pass
+
+            workspace_id = os.getenv("workspace_id")
+            url = "https://login.microsoftonline.com/common/oauth2/token"
+            data = {"grant_type": "password",
+                    "username": os.getenv('username'),
+                    "password": os.getenv('password'),
+                    "client_id": os.getenv('client_id'),
+                    "client_secret": os.getenv('client_secret'),
+                    "resource": "https://analysis.windows.net/powerbi/api"}
+
+            login_output = requests.post(url, data=data)
+            login_output = login_output.json()
+            access_token = login_output["access_token"]
+            auth_url = f"https://api.powerbi.com/v1.0/myorg/groups/{workspace_id}/reports/"
+            auth_output = requests.get(auth_url, headers={'Authorization': f'Bearer {access_token}'})
+
+            report_list = auth_output.json()["value"]
+
+            required_name_list = ['Sectors_Company_Profile']
+            for report in report_list:
+                if report["name"] in required_name_list:
+                    dataset_id = report["datasetId"]
+                    refresh_url = f"https://api.powerbi.com/v1.0/myorg/datasets/{dataset_id}/refreshes"
+                    response = requests.post(refresh_url, headers={'Authorization': f'Bearer {access_token}'})
+                    print(report["name"], response)
+    except:
+        pass
