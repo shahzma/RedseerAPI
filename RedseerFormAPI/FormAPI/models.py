@@ -8,6 +8,7 @@ from django.conf import settings
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
+from datetime import date, timedelta
 from .service_utils import CalculatedParamFn
 import calendar
 import datetime
@@ -305,8 +306,10 @@ def refresh_power_bi(sender, instance, created, **kwargs):
     try:
         # refresh power bi. should run 1 time only so need to make changes to if condition
         if instance.is_submitted and instance.approved_by_level == 1:
-            start_date = instance.date_created
-            end_date = instance.date_created
+            date_created = instance.date_created.date()
+            end_date = str(date_created.date().replace(day=1) - timedelta(days=1))
+            start_date = str(date_created.date().replace(day=1) - timedelta(days=end_date.day))
+            print(start_date, end_date)
             report_id = instance.report_id
             player_id = Player.objects.filter(player_name=instance.company)[0]
             try:

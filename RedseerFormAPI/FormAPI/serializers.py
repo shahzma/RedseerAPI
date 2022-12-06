@@ -229,7 +229,10 @@ class AuditReportVersionSerializer(serializers.ModelSerializer):
         rep.pop('filled_count')
         rep.pop('is_submitted')
         date_created = instance.date_created.date()
-        last_date_day = Player.objects.filter(player_name=instance.company)[0].last_date_day
+        try:
+            last_date_day = Player.objects.filter(player_name=instance.company)[0].last_date_day
+        except:
+            last_date_day = 23
         last_date = date_created.replace(day=last_date_day)
         rep['last_date'] = last_date
         rep['sector'] = Report.objects.filter(id = instance.report_id)[0].name
