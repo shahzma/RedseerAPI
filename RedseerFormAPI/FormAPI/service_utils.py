@@ -118,6 +118,11 @@ class CalculatedParamFn:
         for i in range(1, 4000):
             calc_dict[i] = 0;
 
+    def test_class_fn(self, pl_id, sd, ed):
+        print(pl_id)
+        print(sd)
+        print(ed)
+
     def calc_script_eb2b(self, pl_id, sd, ed):
         # print(pl_id)
         # self.reset_calc_dict()
@@ -911,6 +916,7 @@ class CalculatedParamFn:
         self.InsertORUpdate(dff)
 
     def calc_script_edtech(self, pl_id, sd, ed):
+        print('edtech script run')
         calc_dict = {}
         for i in range(1, 4000):
             calc_dict[i] = 0

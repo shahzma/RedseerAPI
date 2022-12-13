@@ -143,7 +143,6 @@ class ReportVersionCView(CreateAPIView):
                 new_report_ver.save()
                 end_date = date_time.date().replace(day=1) - timedelta(days=1)
                 start_date = date_time.date().replace(day=1) - timedelta(days=end_date.day)
-                print('st=', start_date, end_date)
                 for i in data['questions']:
                     parametertree_obj = models.ParameterTree.objects.get(id=i['id'])
                     for j in i['sub_questions']:

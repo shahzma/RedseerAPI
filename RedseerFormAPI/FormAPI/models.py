@@ -222,7 +222,8 @@ def notify_denial_by_email(sender, instance, **kwargs):
     # previous here refers to current instance of row in reportversion table
     try:
         previous = ReportVersion.objects.filter(id=instance.id)
-        print('email will be sent')
+        print('email will be sent to notify if denial by email')
+        # below condition works bea=cause no email exists for 1st submission
         # previous[0 wont work if there is no previous instance hence not work for forms which are new. Also issues with others
         if previous[0].is_submitted != instance.is_submitted:
             print('check submit condition')
@@ -303,78 +304,81 @@ def fill_audit_table(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=ReportVersion)
 def refresh_power_bi(sender, instance, created, **kwargs):
-    try:
+    print('refresh fn triggered')
         # refresh power bi. should run 1 time only so need to make changes to if condition
+    try:
         if instance.is_submitted and instance.approved_by_level == 1:
-            date_created = instance.date_created.date()
-            end_date = str(date_created.date().replace(day=1) - timedelta(days=1))
-            start_date = str(date_created.date().replace(day=1) - timedelta(days=end_date.day))
-            print(start_date, end_date)
+            date_created = instance.date_created
+            end_date = date_created.replace(day=1) - timedelta(days=1)
+            start_date = date_created.replace(day=1) - timedelta(days=end_date.day)
+            start_date = str(start_date.date())
+            end_date = str(end_date.date())
             report_id = instance.report_id
-            player_id = Player.objects.filter(player_name=instance.company)[0]
+            player_id = Player.objects.filter(player_name=instance.company)[0].player_id
             try:
+                tmp = CalculatedParamFn()
                 if report_id == 45:
-                    CalculatedParamFn.calc_script_eb2b(player_id, start_date, end_date)
+                    tmp.calc_script_eb2b(player_id, start_date, end_date)
                 if report_id == 46:
-                    CalculatedParamFn.calc_script_eb2bGrocery(player_id, start_date, end_date)
+                    tmp.calc_script_eb2bGrocery(player_id, start_date, end_date)
                 if report_id == 47:
-                    CalculatedParamFn.calc_script_eb2bElectronics(player_id, start_date, end_date)
+                    tmp.calc_script_eb2bElectronics(player_id, start_date, end_date)
                 if report_id == 48:
-                    CalculatedParamFn.calc_script_eb2bEPharma(player_id, start_date, end_date)
+                    tmp.calc_script_eb2bEPharma(player_id, start_date, end_date)
                 if report_id == 6:
-                    CalculatedParamFn.calc_script_csm(player_id, start_date, end_date)
+                    tmp.calc_script_csm(player_id, start_date, end_date)
                 if report_id == 5:
-                    CalculatedParamFn.calc_script_shortform(player_id, start_date, end_date)
+                    tmp.calc_script_shortform(player_id, start_date, end_date)
                 if report_id == 1:
-                    CalculatedParamFn.calc_script_video(player_id, start_date, end_date)
+                    tmp.calc_script_video(player_id, start_date, end_date)
                 if report_id == 4:
-                    CalculatedParamFn.calc_script_audio(player_id, start_date, end_date)
+                    tmp.calc_script_audio(player_id, start_date, end_date)
                 if report_id == 33:
-                    CalculatedParamFn.calc_script_rmg(player_id, start_date, end_date)
+                    tmp.calc_script_rmg(player_id, start_date, end_date)
                 if report_id == 36:
-                    CalculatedParamFn.calc_script_usedCars(player_id, start_date, end_date)
+                    tmp.calc_script_usedCars(player_id, start_date, end_date)
                 if report_id == 40:
-                    CalculatedParamFn.calc_script_meatCore(player_id, start_date, end_date)
+                    tmp.calc_script_meatCore(player_id, start_date, end_date)
                 if report_id == 41:
-                    CalculatedParamFn.calc_script_meatMarketPlace(player_id, start_date, end_date)
+                    tmp.calc_script_meatMarketPlace(player_id, start_date, end_date)
                 if report_id == 42:
-                    CalculatedParamFn.calc_script_d2c(player_id, start_date, end_date)
+                    tmp.calc_script_d2c(player_id, start_date, end_date)
                 if report_id == 28:
-                    CalculatedParamFn.calc_script_edtech(player_id, start_date, end_date)
+                    tmp.calc_script_edtech(player_id, start_date, end_date)
                 if report_id == 43:
-                    CalculatedParamFn.calc_script_mobility(player_id, start_date, end_date)
+                    tmp.calc_script_mobility(player_id, start_date, end_date)
                 if report_id == 19:
-                    CalculatedParamFn.calc_script_horizontals(player_id, start_date, end_date)
+                    tmp.calc_script_horizontals(player_id, start_date, end_date)
                 if report_id == 54:
-                    CalculatedParamFn.calc_script_foodtech(player_id, start_date, end_date)
+                    tmp.calc_script_foodtech(player_id, start_date, end_date)
                 if report_id == 25:
-                    CalculatedParamFn.calc_script_ehealth(player_id, start_date, end_date)
+                    tmp.calc_script_ehealth(player_id, start_date, end_date)
             except:
                 pass
 
-            workspace_id = os.getenv("workspace_id")
-            url = "https://login.microsoftonline.com/common/oauth2/token"
-            data = {"grant_type": "password",
-                    "username": os.getenv('username'),
-                    "password": os.getenv('password'),
-                    "client_id": os.getenv('client_id'),
-                    "client_secret": os.getenv('client_secret'),
-                    "resource": "https://analysis.windows.net/powerbi/api"}
+        workspace_id = os.getenv("workspace_id")
+        url = "https://login.microsoftonline.com/common/oauth2/token"
+        data = {"grant_type": "password",
+                "username": os.getenv('username'),
+                "password": os.getenv('password'),
+                "client_id": os.getenv('client_id'),
+                "client_secret": os.getenv('client_secret'),
+                "resource": "https://analysis.windows.net/powerbi/api"}
 
-            login_output = requests.post(url, data=data)
-            login_output = login_output.json()
-            access_token = login_output["access_token"]
-            auth_url = f"https://api.powerbi.com/v1.0/myorg/groups/{workspace_id}/reports/"
-            auth_output = requests.get(auth_url, headers={'Authorization': f'Bearer {access_token}'})
+        login_output = requests.post(url, data=data)
+        login_output = login_output.json()
+        access_token = login_output["access_token"]
+        auth_url = f"https://api.powerbi.com/v1.0/myorg/groups/{workspace_id}/reports/"
+        auth_output = requests.get(auth_url, headers={'Authorization': f'Bearer {access_token}'})
 
-            report_list = auth_output.json()["value"]
+        report_list = auth_output.json()["value"]
 
-            required_name_list = ['Sectors_Company_Profile']
-            for report in report_list:
-                if report["name"] in required_name_list:
-                    dataset_id = report["datasetId"]
-                    refresh_url = f"https://api.powerbi.com/v1.0/myorg/datasets/{dataset_id}/refreshes"
-                    response = requests.post(refresh_url, headers={'Authorization': f'Bearer {access_token}'})
-                    print(report["name"], response)
+        required_name_list = ['Sectors_Company_Profile']
+        for report in report_list:
+            if report["name"] in required_name_list:
+                dataset_id = report["datasetId"]
+                refresh_url = f"https://api.powerbi.com/v1.0/myorg/datasets/{dataset_id}/refreshes"
+                response = requests.post(refresh_url, headers={'Authorization': f'Bearer {access_token}'})
+                print(report["name"], response)
     except:
         pass
