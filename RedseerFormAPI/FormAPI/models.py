@@ -29,15 +29,16 @@ firebase_admin.initialize_app(cred)
 db = firestore.client()
 load_dotenv()
 
-class FormapiParameter(models.Model):
-    parameter_id = models.AutoField(primary_key=True)
-    parameter_name = models.CharField(max_length=80, blank=True, null=True)
-    unit = models.CharField(max_length=20, blank=True, null=True)
-    parent_parameter = models.CharField(max_length=45, blank=True, null=True)
+#ignore it
+# class FormapiParameter(models.Model):#old model, not in use
+#     parameter_id = models.AutoField(primary_key=True)
+#     parameter_name = models.CharField(max_length=80, blank=True, null=True)
+#     unit = models.CharField(max_length=20, blank=True, null=True)
+#     parent_parameter = models.CharField(max_length=45, blank=True, null=True)
 
-    class Meta:
-        managed = False
-        db_table = 'formapi_parameter'
+#     class Meta:
+#         managed = False
+#         db_table = 'formapi_parameter'
 
 
 
@@ -45,7 +46,7 @@ class FormapiParameter(models.Model):
 class Player(models.Model):
     player_id = models.AutoField(primary_key=True, auto_created=True)
     player_name = models.CharField(max_length=45)
-    industry_id = models.IntegerField(default=3) #is caklled industry
+    industry_id = models.IntegerField(default=3) #is called industry
     excel_link = models.CharField(max_length=2000)
     last_date_day = models.IntegerField(default=28, blank=True, null=True)
 

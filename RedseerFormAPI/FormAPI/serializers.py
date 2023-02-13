@@ -150,28 +150,28 @@ class ReportVersionArchivedGetSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 #ignore
-class ReportVersionPostSerializer(serializers.ModelSerializer):
+# class ReportVersionPostSerializer(serializers.ModelSerializer):
 
-    def to_representation(self, instance):
-        rep = super().to_representation(instance)
-        rep['current_instance'] = {
-            'id': rep['id'],
-            'created_at': rep['date_created']
-        }
-        rep['last_modified_date'] = datetime.date.today()
-        # remove questions in get and add for rud
-        rep_details = ReportSerializer(instance.report).data
-        rep_details.pop('questions')
-        rep.pop('date_created')
-        rep['id'] = rep['report']
-        rep['industry_name'] = Report.objects.filter(id=instance.report.id)[0].name
-        rep = {**rep_details, **rep}
-        return rep
+#     def to_representation(self, instance):
+#         rep = super().to_representation(instance)
+#         rep['current_instance'] = {
+#             'id': rep['id'],
+#             'created_at': rep['date_created']
+#         }
+#         rep['last_modified_date'] = datetime.date.today()
+#         # remove questions in get and add for rud
+#         rep_details = ReportSerializer(instance.report).data
+#         rep_details.pop('questions')
+#         rep.pop('date_created')
+#         rep['id'] = rep['report']
+#         rep['industry_name'] = Report.objects.filter(id=instance.report.id)[0].name
+#         rep = {**rep_details, **rep}
+#         return rep
 
-    class Meta:
-        model = ReportVersion
-        fields = "__all__"
-        read_only_fields = ['id']
+#     class Meta:
+#         model = ReportVersion
+#         fields = "__all__"
+#         read_only_fields = ['id']
 
 
 # use for rud bcoz we want questions there
