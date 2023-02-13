@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from datetime import date, timedelta
 from rest_framework.authtoken.models import Token
 from rest_framework import serializers
-from .models import Player, FormapiParameter, Parameter, MainData, Report, ParameterTree, ReportVersion, AuditTable
+from .models import Player, Parameter, MainData, Report, ParameterTree, ReportVersion, AuditTable
 from random import randrange
 
 
@@ -76,6 +76,24 @@ class ReportSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'companies', 'schedule', 'questions', 'deadline_days']
         read_only_fields = ['id']
 
+#Listing the sector and their player
+class SectorPlayerListSerializer(serializers.ModelSerializer):
+    companies = PlayerSerializer(many=True, read_only=True)
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep['company'] = []
+        for d in rep['companies']:
+            if 'player_name' in d and 'player_id' in d:
+                playerobject = {}
+                playerobject['name'] = d['player_name']
+                playerobject['id'] = d['player_id']
+                rep['company'].append(playerobject)
+        rep.pop('companies')
+        return rep
+    class Meta:
+        model = Report
+        fields = ['id', 'name', 'companies']
+        read_only_fields = ['id']
 
 class ReportResultSerializer(serializers.ModelSerializer):
 

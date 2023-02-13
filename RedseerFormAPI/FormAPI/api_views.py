@@ -57,6 +57,10 @@ class ReportLCView(ListCreateAPIView):
             new_report.companies.add(comp_obj)
         serializer = serializers.ReportSerializer(new_report)
         return Response(serializer.data)
+    
+class SectorPlayerLView(ListAPIView):
+    serializer_class = serializers.SectorPlayerListSerializer
+    queryset = models.Report.objects
 #
 #
 # class ReportRUDView(RetrieveUpdateDestroyAPIView):

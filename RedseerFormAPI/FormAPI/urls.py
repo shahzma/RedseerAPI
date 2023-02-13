@@ -1,4 +1,4 @@
-from .api_views import PlayerLCView, ParameterLCView, ReportResultLCView, ReportLCView, ParameterTreeLCView,\
+from .api_views import PlayerLCView, ParameterLCView, ReportResultLCView, ReportLCView, SectorPlayerLView, ParameterTreeLCView, ReportVersionArchivedLView,\
     ReportVersionRUDView, ReportVersionLView, ReportVersionCView, UserViewSet, ReportVersionIDView,QuestionIDView,\
     AuditTableLCView, AuditReportVersionLCView
 from rest_framework import routers
@@ -23,6 +23,10 @@ parametertree_urls = [
 report_urls = [
     path("", ReportLCView.as_view(), name="lc"),
     # path("<uuid:id>", ReportRUDView.as_view(), name="rud")
+]
+
+sector_player_urls = [
+    path("", SectorPlayerLView.as_view(), name="lc"),
 ]
 
 reportversion_urls = [
@@ -75,6 +79,7 @@ urlpatterns = [
     path("parameter/", include((parameter_urls, "parameter"), namespace="parameter")),
     path("parametertree/", include((parametertree_urls, "parametertree"), namespace="parametertree")),
     path("reports/", include((report_urls, "report"), namespace="report")),
+    path("sectors-players/", include((sector_player_urls, "report"), namespace="report")),
     path("forms/", include((reportversion_urls, "reportversion"), namespace="reportversion")),
     path("formresult/", include((formresult_urls, "formresult"), namespace="formresult")),
     path("reportresult/", include((reportresult_urls, "reportresult"), namespace="reportresult")),
