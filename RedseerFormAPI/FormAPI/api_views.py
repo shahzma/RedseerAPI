@@ -78,7 +78,6 @@ class ReportVersionLCView(ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         data = request.data
         report_obj = models.Report.objects.get(id=data['id'])
-        # report_obj = models.Report.objects.get(id=data['report'])
         curr_instance = data['current_instance']
         company_obj = models.Player.objects.get(player_name=data['company'])
         # new_report_ver = models.ReportVersion.objects.create(name=data["name"], report=report_obj, company=data["company"])
@@ -117,7 +116,28 @@ class ReportVersionLCView(ListCreateAPIView):
         serializer = serializers.ReportVersionSerializer(new_report_ver)
         return Response(serializer.data)
 
+class ReportVersionArchivedLView(ListAPIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+    serializer_class = serializers.ReportVersionArchivedGetSerializer
+    queryset = models.ReportVersion.objects
 
+    def get_queryset(self):
+        qs = self.queryset
+        sectorId = self.request.query_params.get('sectorId')
+        playerName = self.request.query_params.get('playerName')
+        date_data = self.request.query_params.get('month').split(" ")
+        selected_month = int(date_data[0])
+        selected_year = int(date_data[1])
+
+        if sectorId:
+            qs = qs.filter(report=sectorId)
+        if playerName:
+            qs = qs.filter(company=playerName)
+        qs = qs.filter(date_created__month=selected_month)
+        qs = qs.filter(date_created__year=selected_year) 
+        return qs
+    
 class ReportVersionLView(ListAPIView):
     permission_classes = (IsAuthenticated,)
     authentication_classes = (TokenAuthentication,)

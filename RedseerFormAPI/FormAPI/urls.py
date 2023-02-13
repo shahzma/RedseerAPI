@@ -34,6 +34,11 @@ reportversion_urls = [
     path("<int>/<int:id>/", ReportVersionRUDView.as_view(), name="rud")
 ]
 
+reportversion_archived_urls = [
+    path("", ReportVersionArchivedLView.as_view(), name="lc"),
+    path('<str:month>/<int:sectorId>/<str:playerName>', ReportVersionArchivedLView.as_view(), name="l"),
+]
+
 formresult_urls = [
     path("<int>/<int:id>/", ReportVersionCView.as_view(), name="c")
 ]
@@ -81,6 +86,7 @@ urlpatterns = [
     path("reports/", include((report_urls, "report"), namespace="report")),
     path("sectors-players/", include((sector_player_urls, "report"), namespace="report")),
     path("forms/", include((reportversion_urls, "reportversion"), namespace="reportversion")),
+    path("forms-archived/", include((reportversion_archived_urls, "reportversion_archived"), namespace="reportversion_archived")),
     path("formresult/", include((formresult_urls, "formresult"), namespace="formresult")),
     path("reportresult/", include((reportresult_urls, "reportresult"), namespace="reportresult")),
     path("formID/", include((formID_urls, "formID"), namespace="formID")),

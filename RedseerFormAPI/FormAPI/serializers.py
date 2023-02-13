@@ -139,7 +139,17 @@ class ReportVersionGetSerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = ['id']
 
-# ignore
+class ReportVersionArchivedGetSerializer(serializers.ModelSerializer):
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        return rep
+
+    class Meta:
+        model = ReportVersion
+        fields = "__all__"
+        read_only_fields = ['id']
+
+#ignore
 class ReportVersionPostSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
