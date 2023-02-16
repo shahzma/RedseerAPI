@@ -142,6 +142,10 @@ class ReportVersionGetSerializer(serializers.ModelSerializer):
 class ReportVersionArchivedGetSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         rep = super().to_representation(instance)
+        curr_report_object = Report.objects.filter(id=instance.report.id)[0]
+        rep['question_count'] = curr_report_object.question_count
+        rep['schedule'] = "monthly" 
+        rep['deadline_days'] = 30
         return rep
 
     class Meta:
