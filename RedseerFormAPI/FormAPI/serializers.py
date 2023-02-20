@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from datetime import date, timedelta
 from rest_framework.authtoken.models import Token
 from rest_framework import serializers
-from .models import Player, Parameter, MainData, Report, ParameterTree, ReportVersion, AuditTable
+from .models import Player, Parameter, MainData, Report, ParameterTree, ReportVersion, AuditTable, ReportQuestion
 from random import randrange
 
 
@@ -192,6 +192,7 @@ class ReportVersionSerializer(serializers.ModelSerializer):
         # print(Report.objects.filter(id=instance.report.id)[0].question) = none as question is many to many
         rep_details = ReportSerializer(instance.report).data
         # # is a list.testing for instance-id = 7
+        all_ques_sequence = ReportQuestion.objects.filter(report=instance.report)
         current_rep_results = MainData.objects.filter(report_version=instance.id)
         # # getting all previous ids which is less than current id and are of same report instance and
         # then choosing last3
@@ -203,6 +204,8 @@ class ReportVersionSerializer(serializers.ModelSerializer):
         last_report_results=MainData.objects.filter(report_version__in=ids)
         for i in rep_details['questions']:
         # i is a dict
+            current_ques_sequence = all_ques_sequence.filter(parametertree=i['id']).values()[0]['sequence']
+            i['sequence'] = current_ques_sequence
             for j in current_rep_results:
                 if i['id'] == j.parametertree.id: #all 37  questions
                     for k in i['sub_questions']:

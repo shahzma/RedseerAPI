@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import Sector, Industry, Player, Parameter, ParameterTree, Report, ReportVersion, MainData, AuditTable, MainDataProd
+from .models import Sector, Industry, Player, Parameter, ParameterTree, Report, ReportVersion, MainData, AuditTable, MainDataProd, ReportQuestion
 
 
 class SectorAdmin(admin.ModelAdmin):
@@ -63,6 +63,12 @@ class MainDataProdAdmin(admin.ModelAdmin):
     search_fields = ['start_date']
 
 
+class ReportQuestionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'report', 'parametertree', 'sequence')
+    ordering = ('id',)
+    search_fields = ['report__name', 'parametertree__question']
+
+
 # Register your models here.
 admin.site.register(Sector, SectorAdmin)
 admin.site.register(Industry, IndustryAdmin)
@@ -74,3 +80,4 @@ admin.site.register(ReportVersion, ReportVersionAdmin)
 admin.site.register(MainData, MainDataAdmin)
 admin.site.register(AuditTable, AuditTableAdmin)
 admin.site.register(MainDataProd, MainDataProdAdmin)
+admin.site.register(ReportQuestion, ReportQuestionAdmin)

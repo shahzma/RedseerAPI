@@ -92,6 +92,9 @@ class ParameterTree(models.Model):
     class Meta:
         managed = False
 
+    def __str__(self): #'question' is being used as attribute to identify Report objects 
+        return self.question
+
 
 # permitted to create different model
 class Report(models.Model):
@@ -107,6 +110,9 @@ class Report(models.Model):
     class Meta:
         managed = False
         db_table = "report"
+    
+    def __str__(self): #'name' is being used as attribute to identify Report objects 
+        return self.name
 #
 #
 # # main model
@@ -231,6 +237,17 @@ class MainDataProd(models.Model):
     class Meta:
         managed = False
         db_table = 'main_data_prod'
+
+# Table relations
+class ReportQuestion(models.Model):
+    id = models.AutoField(auto_created=True, primary_key=True)
+    report = models.ForeignKey(Report, on_delete=models.PROTECT)
+    parametertree = models.ForeignKey(ParameterTree, on_delete=models.PROTECT)
+    sequence = models.IntegerField(default=0, null=False)
+
+    class Meta:
+        managed = False
+        db_table = 'report_question'
 
 
 @receiver(pre_save, sender=ReportVersion)
