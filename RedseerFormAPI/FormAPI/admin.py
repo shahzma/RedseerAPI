@@ -16,9 +16,9 @@ class IndustryAdmin(admin.ModelAdmin):
 
 
 class PlayerAdmin(admin.ModelAdmin):
-    list_display = ('player_id', 'player_name')
+    list_display = ('player_id', 'player_name', 'industry')
     ordering = ('player_id',)
-    search_fields = ['player_name']
+    search_fields = ['player_name', 'industry__industry_name']
 
 
 class ParameterAdmin(admin.ModelAdmin):
@@ -46,21 +46,25 @@ class ReportVersionAdmin(admin.ModelAdmin):
 
 
 class MainDataAdmin(admin.ModelAdmin):
-    list_display = ('id', 'player', 'start_date')
-    ordering = ('id',)
-    search_fields = ['start_date']
+    list_display = ('id', 'player', 'start_date',
+                    'parametertree', 'report_version')
+    ordering = ('-start_date',)
+    search_fields = ['start_date',
+                     'parametertree__question', 'report_version__name']
 
 
 class AuditTableAdmin(admin.ModelAdmin):
     list_display = ('user', 'user_level', 'form_id')
     ordering = ('user_level',)
-    search_fields = ['user', 'form_id']
+    search_fields = ['user', 'form_id__name']
 
 
 class MainDataProdAdmin(admin.ModelAdmin):
-    list_display = ('id', 'player', 'start_date')
-    ordering = ('id',)
-    search_fields = ['start_date']
+    list_display = ('id', 'player', 'start_date',
+                    'parametertree', 'report_version')
+    ordering = ('-start_date',)
+    search_fields = ['start_date',
+                     'parametertree__question', 'report_version__name']
 
 
 class ReportQuestionAdmin(admin.ModelAdmin):

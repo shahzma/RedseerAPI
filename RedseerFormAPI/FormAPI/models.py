@@ -46,6 +46,9 @@ class Sector(models.Model):
     class Meta:
         managed = False
         db_table = "sector"
+
+    def __str__(self): #'sector_name' is being used as attribute to identify Report objects 
+        return self.sector_name
     
 class Industry(models.Model):
     industry_id = models.AutoField(primary_key=True, auto_created=True)
@@ -56,18 +59,24 @@ class Industry(models.Model):
     class Meta:
         managed = False
         db_table = "industry"
+    
+    def __str__(self): #'industry_name' is being used as attribute to identify Report objects 
+        return self.industry_name
 
 # previously called company
 class Player(models.Model):
     player_id = models.AutoField(primary_key=True, auto_created=True)
     player_name = models.CharField(max_length=45)
-    industry_id = models.IntegerField(default=3) #is called industry
+    industry = models.ForeignKey(Industry, models.DO_NOTHING, blank=True, null=False) #is called industry
     excel_link = models.CharField(max_length=2000)
     last_date_day = models.IntegerField(default=28, blank=True, null=True)
 
     class Meta:
         managed = False
         db_table = "player"
+    
+    def __str__(self): #'player_name' is being used as attribute to identify Report objects 
+        return self.player_name
 
 
 class Parameter(models.Model):
@@ -79,6 +88,9 @@ class Parameter(models.Model):
     class Meta:
         managed = False
         db_table = 'parameter'
+    
+    def __str__(self): #'parameter_name' is being used as attribute to identify Report objects 
+        return self.parameter_name  or '----- ERROR: NULL VALUE FOUND ----'
 
 
 # mainquestion. unit = currency. aggregate = summate
@@ -93,7 +105,7 @@ class ParameterTree(models.Model):
         managed = False
 
     def __str__(self): #'question' is being used as attribute to identify Report objects 
-        return self.question
+        return self.question or '----- ERROR: NULL VALUE FOUND ----'
 
 
 # permitted to create different model
