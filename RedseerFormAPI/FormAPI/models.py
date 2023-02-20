@@ -40,7 +40,22 @@ load_dotenv()
 #         managed = False
 #         db_table = 'formapi_parameter'
 
-
+class Sector(models.Model):
+    sector_id = models.AutoField(primary_key=True, auto_created=True)
+    sector_name = models.CharField(max_length=45)
+    class Meta:
+        managed = False
+        db_table = "sector"
+    
+class Industry(models.Model):
+    industry_id = models.AutoField(primary_key=True, auto_created=True)
+    industry_name = models.CharField(max_length=45)
+    sector = models.ForeignKey('Sector', models.DO_NOTHING, blank=True, null=True)
+    order = models.IntegerField(default=0)
+    sector_name = models.CharField(max_length=45)
+    class Meta:
+        managed = False
+        db_table = "industry"
 
 # previously called company
 class Player(models.Model):
