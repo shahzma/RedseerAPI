@@ -53,7 +53,7 @@ class Sector(models.Model):
 class Industry(models.Model):
     industry_id = models.AutoField(primary_key=True, auto_created=True)
     industry_name = models.CharField(max_length=45)
-    sector = models.ForeignKey('Sector', models.DO_NOTHING, blank=True, null=True)
+    sector = models.ForeignKey(Sector, models.DO_NOTHING, blank=True, null=True)
     order = models.IntegerField(default=0)
     sector_name = models.CharField(max_length=45)
     class Meta:

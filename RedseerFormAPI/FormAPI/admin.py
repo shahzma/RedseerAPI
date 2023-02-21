@@ -10,16 +10,15 @@ class SectorAdmin(admin.ModelAdmin):
 
 
 class IndustryAdmin(admin.ModelAdmin):
-    list_display = ('industry_id', 'industry_name', 'sector_name')
+    list_display = ('industry_id', 'industry_name', 'sector', 'sector_name')
     ordering = ('industry_id',)
-    search_fields = ['industry_name', 'sector_name']
+    search_fields = ['industry_name', 'sector__sector_name', 'sector_name']
 
 
 class PlayerAdmin(admin.ModelAdmin):
-    list_display = ('player_id', 'player_name', 'industry')
+    list_display = ('player_id', 'player_name', 'industry', 'last_date_day')
     ordering = ('player_id',)
-    search_fields = ['player_name', 'industry__industry_name']
-
+    search_fields = ['player_id', 'player_name', 'industry__industry_name', 'last_date_day']
 
 class ParameterAdmin(admin.ModelAdmin):
     list_display = ('parameter_id', 'parameter_name')
