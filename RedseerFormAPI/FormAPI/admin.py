@@ -18,7 +18,9 @@ class IndustryAdmin(admin.ModelAdmin):
 class PlayerAdmin(admin.ModelAdmin):
     list_display = ('player_id', 'player_name', 'industry', 'last_date_day')
     ordering = ('player_id',)
-    search_fields = ['player_id', 'player_name', 'industry__industry_name', 'last_date_day']
+    search_fields = ['player_id', 'player_name',
+                     'industry__industry_name', 'last_date_day']
+
 
 class ParameterAdmin(admin.ModelAdmin):
     list_display = ('parameter_id', 'parameter_name')
@@ -33,15 +35,18 @@ class ParameterTreeAdmin(admin.ModelAdmin):
 
 
 class ReportAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name')
+    list_display = ('id', 'name', 'max_level_needed',
+                    'form_relase_date', 'form_active_days')
     ordering = ('id',)
     search_fields = ['name']
 
 
 class ReportVersionAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'company')
+    list_display = ('id', 'name', 'company', 'report',
+                    'date_created', 'closing_time', 'is_submitted')
     ordering = ('id',)
-    search_fields = ['company']
+    search_fields = ['name', 'company', 'report__name',
+                     'date_created', 'closing_time']
 
 
 class MainDataAdmin(admin.ModelAdmin):
@@ -49,7 +54,7 @@ class MainDataAdmin(admin.ModelAdmin):
                     'parametertree', 'report_version')
     ordering = ('-start_date',)
     search_fields = ['start_date',
-                     'parametertree__question', 'report_version__name']
+                     'parametertree__question', 'report_version__id', 'report_version__name']
 
 
 class AuditTableAdmin(admin.ModelAdmin):
@@ -63,7 +68,7 @@ class MainDataProdAdmin(admin.ModelAdmin):
                     'parametertree', 'report_version')
     ordering = ('-start_date',)
     search_fields = ['start_date',
-                     'parametertree__question', 'report_version__name']
+                     'parametertree__question', 'report_version__id', 'report_version__name']
 
 
 class ReportQuestionAdmin(admin.ModelAdmin):
