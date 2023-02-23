@@ -162,6 +162,8 @@ class ReportVersionCView(CreateAPIView):
             new_report_ver.is_submitted = data['is_submitted']
             new_report_ver.filled_count = data['filled_count']
             new_report_ver.email = data['email']
+            if data.get('approved_by_level') != None:
+                new_report_ver.approved_by_level = data['approved_by_level']
             # update code for reportresult
             if new_report_ver:
                 new_report_ver.save()
