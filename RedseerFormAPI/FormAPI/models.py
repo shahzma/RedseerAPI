@@ -1,6 +1,7 @@
 import uuid
 import django
 from django.db import models
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.dispatch import receiver
 from django.db.models.signals import post_save, pre_save
 from django.core.mail import EmailMessage
@@ -67,7 +68,7 @@ class Industry(models.Model):
 class Player(models.Model):
     player_id = models.AutoField(primary_key=True, auto_created=True)
     player_name = models.CharField(max_length=45)
-    industry = models.ForeignKey(Industry, models.DO_NOTHING, blank=True, null=False) #is called industry
+    industry = models.ForeignKey(Industry, models.DO_NOTHING, blank=True, null=True) #is called industry
     excel_link = models.CharField(max_length=2000)
     last_date_day = models.IntegerField(default=28, blank=True, null=True)
 
@@ -118,6 +119,10 @@ class Report(models.Model):
     companies = models.ManyToManyField(Player)
     question = models.ManyToManyField(ParameterTree)
     max_level_needed = models.IntegerField(default=3)
+    form_relase_date = models.IntegerField(default=1, validators=[MaxValueValidator(31),
+                                                                   MinValueValidator(1)])
+    form_active_days = models.IntegerField(default=15, validators=[MaxValueValidator(100),
+                                                                   MinValueValidator(1)])
 
     class Meta:
         managed = False
@@ -154,9 +159,10 @@ class ReportVersion(models.Model):
     approved_by_level = models.IntegerField(default=1)
     max_level_needed = models.IntegerField(default=5)
     date_created = models.DateTimeField(default=django.utils.timezone.now)
+    closing_time = models.DateTimeField(blank = True)
 
     def __str__(self):
-        return self.name
+        return str(self.id) + " - " + self.name
 
     class Meta:
         managed = False
