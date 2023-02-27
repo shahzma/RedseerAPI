@@ -12,7 +12,7 @@ class SectorAdmin(admin.ModelAdmin):
 class IndustryAdmin(admin.ModelAdmin):
     list_display = ('industry_id', 'industry_name', 'sector', 'sector_name')
     ordering = ('industry_id',)
-    search_fields = ['industry_name', 'sector__sector_name', 'sector_name']
+    search_fields = ['industry_id', 'industry_name', 'sector__sector_name', 'sector_name']
 
 
 class PlayerAdmin(admin.ModelAdmin):
@@ -25,27 +25,27 @@ class PlayerAdmin(admin.ModelAdmin):
 class ParameterAdmin(admin.ModelAdmin):
     list_display = ('parameter_id', 'parameter_name')
     ordering = ('parameter_id',)
-    search_fields = ['parameter_name']
+    search_fields = ['id', 'parameter_name']
 
 
 class ParameterTreeAdmin(admin.ModelAdmin):
     list_display = ('id', 'question')
     ordering = ('id',)
-    search_fields = ['question']
+    search_fields = ['id', 'question']
 
 
 class ReportAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'max_level_needed',
                     'form_relase_date', 'form_active_days')
     ordering = ('id',)
-    search_fields = ['name']
+    search_fields = ['id', 'name']
 
 
 class ReportVersionAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'company', 'report',
                     'date_created', 'closing_time', 'is_submitted')
     ordering = ('id',)
-    search_fields = ['name', 'company', 'report__name',
+    search_fields = ['id', 'name', 'company', 'report__name',
                      'date_created', 'closing_time']
 
 
@@ -53,7 +53,7 @@ class MainDataAdmin(admin.ModelAdmin):
     list_display = ('id', 'player', 'start_date',
                     'parametertree', 'report_version')
     ordering = ('-start_date',)
-    search_fields = ['start_date',
+    search_fields = ['start_date', 'player__player_name',
                      'parametertree__question', 'report_version__id', 'report_version__name']
 
 
@@ -67,7 +67,7 @@ class MainDataProdAdmin(admin.ModelAdmin):
     list_display = ('id', 'player', 'start_date',
                     'parametertree', 'report_version')
     ordering = ('-start_date',)
-    search_fields = ['start_date',
+    search_fields = ['start_date', 'player__player_name',
                      'parametertree__question', 'report_version__id', 'report_version__name']
 
 

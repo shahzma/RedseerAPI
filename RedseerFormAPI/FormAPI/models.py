@@ -11,6 +11,7 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 from datetime import date, timedelta
 from .service_utils import CalculatedParamFn
+from .service_utils_foodtech import CalculatedParamFoodtechFn
 import calendar
 import datetime
 import requests
@@ -368,6 +369,9 @@ def refresh_power_bi(sender, instance, created, **kwargs):
             player_id = Player.objects.filter(player_name=instance.company)[0].player_id
             try:
                 tmp = CalculatedParamFn()
+                tmpFoodtech = CalculatedParamFoodtechFn() 
+                if report_id == 14:
+                    tmpFoodtech.report_version_id(instance.id)
                 if report_id == 45:
                     tmp.calc_script_eb2b(player_id, start_date, end_date)
                 if report_id == 46:
