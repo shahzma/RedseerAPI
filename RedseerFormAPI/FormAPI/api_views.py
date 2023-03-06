@@ -45,7 +45,8 @@ class ReportLCView(ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         data = request.data
-        new_report = models.Report.objects.create(name=data['name'], frequency=data['frequency'], cutoff=data['cutoff'])
+        new_report = models.Report.objects.create(
+            name=data['name'], frequency=data['frequency'], cutoff=data['cutoff'])
 
         new_report.save()
         for param in data['question']:
@@ -57,7 +58,8 @@ class ReportLCView(ListCreateAPIView):
             new_report.companies.add(comp_obj)
         serializer = serializers.ReportSerializer(new_report)
         return Response(serializer.data)
-    
+
+
 class SectorPlayerLView(ListAPIView):
     serializer_class = serializers.SectorPlayerListSerializer
     queryset = models.Report.objects
@@ -135,9 +137,10 @@ class ReportVersionArchivedLView(ListAPIView):
         if playerName:
             qs = qs.filter(company=playerName)
         qs = qs.filter(date_created__month=selected_month)
-        qs = qs.filter(date_created__year=selected_year) 
+        qs = qs.filter(date_created__year=selected_year)
         return qs
-    
+
+
 class ReportVersionLView(ListAPIView):
     permission_classes = (IsAuthenticated,)
     authentication_classes = (TokenAuthentication,)
@@ -158,7 +161,8 @@ class ReportVersionCView(CreateAPIView):
         company_obj = models.Player.objects.get(player_name=data['company'])
         # new_report_ver = models.ReportVersion.objects.create(name=data["name"], report=report_obj, company=data["company"])
         try:
-            new_report_ver = models.ReportVersion.objects.get(id=curr_instance['id'])
+            new_report_ver = models.ReportVersion.objects.get(
+                id=curr_instance['id'])
             new_report_ver.is_submitted = data['is_submitted']
             new_report_ver.filled_count = data['filled_count']
             new_report_ver.email = data['email']
@@ -170,13 +174,16 @@ class ReportVersionCView(CreateAPIView):
                 end_date = date_time.date().replace(day=1) - timedelta(days=1)
                 start_date = date_time.date().replace(day=1) - timedelta(days=end_date.day)
                 for i in data['questions']:
-                    parametertree_obj = models.ParameterTree.objects.get(id=i['id'])
+                    parametertree_obj = models.ParameterTree.objects.get(
+                        id=i['id'])
                     for j in i['sub_questions']:
                         try:
                             # doing this bcoz data can be string /blank/integer etc
                             j['current_value'] = float(j['current_value'])
-                            parameter_obj = models.Parameter.objects.get(parameter_id=j['id'])
-                            report_ver_obj = models.ReportVersion.objects.get(id=data['current_instance']['id'])
+                            parameter_obj = models.Parameter.objects.get(
+                                parameter_id=j['id'])
+                            report_ver_obj = models.ReportVersion.objects.get(
+                                id=data['current_instance']['id'])
                             report_res, created = models.MainData.objects.update_or_create(parameter=parameter_obj,
                                                                                            parametertree=parametertree_obj,
                                                                                            report_version=report_ver_obj,
@@ -185,7 +192,7 @@ class ReportVersionCView(CreateAPIView):
                                                                                            start_date=start_date,
                                                                                            end_date=end_date,
                                                                                            defaults={'value': j['current_value'],
-                                                                                                    'date_created': datetime.date.today()})
+                                                                                                     'date_created': datetime.date.today(), 'remark': j['remark']})
                             report_res.save()
                         except:
                             print('error')
@@ -215,9 +222,12 @@ class ReportResultLCView(ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         data = request.data
-        report_ver_obj = models.ReportVersion.objects.get(id=data['report_version'])
-        parameter_obj = models.Parameter.objects.get(parameter_id=data['parameter'])
-        parametertree_obj = models.ParameterTree.objects.get(id=data['parametertree'])
+        report_ver_obj = models.ReportVersion.objects.get(
+            id=data['report_version'])
+        parameter_obj = models.Parameter.objects.get(
+            parameter_id=data['parameter'])
+        parametertree_obj = models.ParameterTree.objects.get(
+            id=data['parametertree'])
         player = data['player']
         player_obj = models.Player.objects.get(player_id=player)
         start_date = datetime.date.today().replace(day=1)
@@ -225,20 +235,21 @@ class ReportResultLCView(ListCreateAPIView):
             start_date = data['start_date']
             start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
             start_date = start_date.date()
-        end_date = date.today().replace(day=calendar.monthrange(date.today().year, date.today().month)[1])
+        end_date = date.today().replace(day=calendar.monthrange(
+            date.today().year, date.today().month)[1])
         if data['end_date']:
             end_date = data['end_date']
             end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
             end_date = end_date.date()
         date_created = datetime.date.today()
         new_result_entry, created = models.MainData.objects.update_or_create(parameter=parameter_obj,
-                                                                        parametertree=parametertree_obj,
-                                                                        report_version=report_ver_obj,
+                                                                             parametertree=parametertree_obj,
+                                                                             report_version=report_ver_obj,
                                                                              source=data['source'],
-                                                                        player=player_obj, start_date=start_date,
-                                                                        end_date=end_date,
-                                                                        defaults={'value': data['value']
-                                                                                  })
+                                                                             player=player_obj, start_date=start_date,
+                                                                             end_date=end_date,
+                                                                             defaults={'value': data['value']
+                                                                                       })
         new_result_entry.save()
         serializer = serializers.ReportResultSerializer(new_result_entry)
         return Response(serializer.data)
@@ -253,7 +264,8 @@ class ReportVersionIDView(CreateAPIView):
         end_date = datetime.datetime.strptime(end_date, '%d/%m/%y').date()
         company_name = request.data.get('company_name')
         question_name = request.data.get('question_name')
-        report_version = models.ReportVersion.objects.filter(company = company_name, date_created__range=[start_date,end_date])[0]
+        report_version = models.ReportVersion.objects.filter(
+            company=company_name, date_created__range=[start_date, end_date])[0]
         report_id = report_version.report_id
         questions = models.ParameterTree.objects.filter(report=report_id)
         question_id = 107
@@ -269,7 +281,8 @@ class QuestionIDView(CreateAPIView):
     def post(self, request):
         report_version_id = request.data.get('report_version_id')
         question_name = request.data.get('question_name')
-        report_id = models.ReportVersion.objects.filter(id=report_version_id)[0].report_id
+        report_id = models.ReportVersion.objects.filter(
+            id=report_version_id)[0].report_id
         questions = models.ParameterTree.objects.filter(report=report_id)
         question_id = 0
         for i in questions:
@@ -288,7 +301,8 @@ class AuditTableLCView(ListCreateAPIView):
         query_params = self.request.query_params
         month = query_params.get('month')
         if month:
-            self.queryset = self.queryset.filter(date__year=today.year, date__month=month)
+            self.queryset = self.queryset.filter(
+                date__year=today.year, date__month=month)
         qs = self.queryset
         form_id = self.request.query_params.get('form_id')
         print(form_id)
@@ -312,10 +326,12 @@ class AuditReportVersionLCView(ListCreateAPIView):
                 self.queryset = self.queryset.filter(date_created__year=today.year, date_created__month=month,
                                                      company__contains=company)
             else:
-                self.queryset = self.queryset.filter(date_created__year=today.year, date_created__month=month)
+                self.queryset = self.queryset.filter(
+                    date_created__year=today.year, date_created__month=month)
         else:
             if company:
-                self.queryset = self.queryset.filter(company__contains = company)
+                self.queryset = self.queryset.filter(company__contains=company)
             else:
-                self.queryset = self.queryset.filter(date_created__year=today.year, date_created__month=today.month-1)
+                self.queryset = self.queryset.filter(
+                    date_created__year=today.year, date_created__month=today.month-1)
         return self.queryset

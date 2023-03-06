@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import Sector, Industry, Player, Parameter, ParameterTree, Report, ReportVersion, MainData, AuditTable, MainDataProd, ReportQuestion
+from .models import Sector, Industry, Player, Parameter, ParameterTree, Report, ReportVersion, MainData, AuditTable, MainDataProd, ReportQuestion, ReportCompanies
 
 
 class SectorAdmin(admin.ModelAdmin):
@@ -12,7 +12,8 @@ class SectorAdmin(admin.ModelAdmin):
 class IndustryAdmin(admin.ModelAdmin):
     list_display = ('industry_id', 'industry_name', 'sector', 'sector_name')
     ordering = ('industry_id',)
-    search_fields = ['industry_id', 'industry_name', 'sector__sector_name', 'sector_name']
+    search_fields = ['industry_id', 'industry_name',
+                     'sector__sector_name', 'sector_name']
 
 
 class PlayerAdmin(admin.ModelAdmin):
@@ -25,7 +26,7 @@ class PlayerAdmin(admin.ModelAdmin):
 class ParameterAdmin(admin.ModelAdmin):
     list_display = ('parameter_id', 'parameter_name')
     ordering = ('parameter_id',)
-    search_fields = ['id', 'parameter_name']
+    search_fields = ['parameter_id', 'parameter_name']
 
 
 class ParameterTreeAdmin(admin.ModelAdmin):
@@ -77,6 +78,12 @@ class ReportQuestionAdmin(admin.ModelAdmin):
     search_fields = ['report__name', 'parametertree__question']
 
 
+class ReportCompaniesAdmin(admin.ModelAdmin):
+    list_display = ('id', 'report', 'player')
+    ordering = ('id',)
+    search_fields = ['report__name', 'player__player_name']
+
+
 # Register your models here.
 admin.site.register(Sector, SectorAdmin)
 admin.site.register(Industry, IndustryAdmin)
@@ -89,3 +96,4 @@ admin.site.register(MainData, MainDataAdmin)
 admin.site.register(AuditTable, AuditTableAdmin)
 admin.site.register(MainDataProd, MainDataProdAdmin)
 admin.site.register(ReportQuestion, ReportQuestionAdmin)
+admin.site.register(ReportCompanies, ReportCompaniesAdmin)

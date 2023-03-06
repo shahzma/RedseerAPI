@@ -114,7 +114,7 @@ class ParameterTree(models.Model):
 class Report(models.Model):
     id = models.AutoField(primary_key=True, auto_created=True)
     name = models.CharField(max_length=100)
-    frequency = models.TextField(choices=[(1,"Weekly"),(2,"Monthly"),(3,"Quarterly")])
+    frequency = models.TextField(choices=[("1","Weekly"),("2","Monthly"),("3","Quarterly")])
     cutoff = models.IntegerField(default=15) # change default to 30
     question_count = models.IntegerField(default=24)
     companies = models.ManyToManyField(Player)
@@ -151,7 +151,7 @@ class Report(models.Model):
 class ReportVersion(models.Model):
     id = models.AutoField(primary_key=True, auto_created=True)
     name = models.CharField(max_length=100)
-    company = models.CharField(max_length=255, default='testCompany')
+    company = models.CharField(max_length=255, default='testCompany') # this should be a foriegn key
     report = models.ForeignKey(Report, on_delete=models.CASCADE)
     filled_count = models.IntegerField(default=0)
     is_submitted = models.BooleanField(default=False)
@@ -219,6 +219,7 @@ class MainData(models.Model):
     end_date = models.DateField(blank=True, null=True)
     parameter = models.ForeignKey('Parameter', models.DO_NOTHING, blank=True, null=True)
     value = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    remark = models.CharField(max_length=200, blank=True, null=True)
     date_created = models.DateField(blank=True, null=True)
     source = models.CharField(max_length=45, blank=True, null=True)
     parametertree = models.ForeignKey(ParameterTree, on_delete=models.PROTECT, default=1)
@@ -248,6 +249,7 @@ class MainDataProd(models.Model):
     end_date = models.DateField(blank=True, null=True)
     parameter = models.ForeignKey('Parameter', models.DO_NOTHING, blank=True, null=True)
     value = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    remark = models.CharField(max_length=200, blank=True, null=True)
     date_created = models.DateField(blank=True, null=True)
     source = models.CharField(max_length=45, blank=True, null=True)
     parametertree = models.ForeignKey(ParameterTree, on_delete=models.PROTECT, default=1)
@@ -267,6 +269,18 @@ class ReportQuestion(models.Model):
     class Meta:
         managed = False
         db_table = 'report_question'
+
+class ReportCompanies(models.Model):
+    id = models.AutoField(primary_key=True, auto_created=True)
+    report = models.ForeignKey(Report, on_delete=models.PROTECT, blank=True, null=True)
+    player = models.ForeignKey(Player, on_delete=models.PROTECT, blank=True, null=True) #is called industry
+
+    class Meta:
+        managed = False
+        db_table = "report_companies"
+    
+    def __str__(self): #'player_name' is being used as attribute to identify Report objects 
+        return self.report + " - " + self.player
 
 
 @receiver(pre_save, sender=ReportVersion)

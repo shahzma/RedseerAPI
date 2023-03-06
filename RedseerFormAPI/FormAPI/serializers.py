@@ -190,7 +190,7 @@ class ReportVersionSerializer(serializers.ModelSerializer):
         # rep['is_submitted'] = False
         rep['last_modified_date'] = datetime.date.today()
         # print(Report.objects.filter(id=instance.report.id)[0].question) = none as question is many to many
-        rep_details = ReportSerializer(instance.report).data
+        report_details = ReportSerializer(instance.report).data
         # # is a list.testing for instance-id = 7
         all_ques_sequence = ReportQuestion.objects.filter(report=instance.report)
         current_rep_results = MainData.objects.filter(report_version=instance.id)
@@ -202,7 +202,7 @@ class ReportVersionSerializer(serializers.ModelSerializer):
         print(ids)
         # getting form report result based on previous ids
         last_report_results=MainData.objects.filter(report_version__in=ids)
-        for i in rep_details['questions']:
+        for i in report_details['questions']:
         # i is a dict
             current_ques_sequence = all_ques_sequence.filter(parametertree=i['id']).values()[0]['sequence']
             i['sequence'] = current_ques_sequence
@@ -212,8 +212,9 @@ class ReportVersionSerializer(serializers.ModelSerializer):
                         # k['current_value'] = None
                         if k['id'] == j.parameter.parameter_id:
                             k['current_value'] = j.value
+                            k['remark'] = j.remark
 
-        for i in rep_details['questions']:
+        for i in report_details['questions']:
             for j in i['sub_questions']:
                 last_val = ''
                 for k in last_report_results:
@@ -228,13 +229,13 @@ class ReportVersionSerializer(serializers.ModelSerializer):
         # rep_result = ReportResultSerializer(instance.id).data
         # print(rep_result)
         rep['industry_name'] = Report.objects.filter(id=instance.report.id)[0].name
-        rep['id'] = rep_details['id']
+        rep['id'] = report_details['id']
         print(Player.objects.filter(player_name=instance.company))
         try:
             rep['excel_link'] = Player.objects.filter(player_name=instance.company)[0].excel_link
         except:
             rep['excel_link'] = ''
-        rep = {**rep_details, **rep}
+        rep = {**report_details, **rep}
         return rep
 
     class Meta:
