@@ -1,6 +1,7 @@
 import uuid
 import django
 from django.db import models
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.dispatch import receiver
 from django.db.models.signals import post_save, pre_save
 from django.core.mail import EmailMessage
@@ -10,6 +11,7 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 from datetime import date, timedelta
 from .service_utils import CalculatedParamFn
+from .service_utils_foodtech import CalculatedParamFoodtechFn
 import calendar
 import datetime
 import requests
@@ -40,19 +42,43 @@ load_dotenv()
 #         managed = False
 #         db_table = 'formapi_parameter'
 
+class Sector(models.Model):
+    sector_id = models.AutoField(primary_key=True, auto_created=True)
+    sector_name = models.CharField(max_length=45)
+    class Meta:
+        managed = False
+        db_table = "sector"
 
+    def __str__(self): #'sector_name' is being used as attribute to identify Report objects 
+        return self.sector_name
+    
+class Industry(models.Model):
+    industry_id = models.AutoField(primary_key=True, auto_created=True)
+    industry_name = models.CharField(max_length=45)
+    sector = models.ForeignKey(Sector, models.DO_NOTHING, blank=True, null=True)
+    order = models.IntegerField(default=0)
+    sector_name = models.CharField(max_length=45)
+    class Meta:
+        managed = False
+        db_table = "industry"
+    
+    def __str__(self): #'industry_name' is being used as attribute to identify Report objects 
+        return self.industry_name
 
 # previously called company
 class Player(models.Model):
     player_id = models.AutoField(primary_key=True, auto_created=True)
     player_name = models.CharField(max_length=45)
-    industry_id = models.IntegerField(default=3) #is called industry
+    industry = models.ForeignKey(Industry, models.DO_NOTHING, blank=True, null=True) #is called industry
     excel_link = models.CharField(max_length=2000)
     last_date_day = models.IntegerField(default=28, blank=True, null=True)
 
     class Meta:
         managed = False
         db_table = "player"
+    
+    def __str__(self): #'player_name' is being used as attribute to identify Report objects 
+        return self.player_name
 
 
 class Parameter(models.Model):
@@ -64,6 +90,9 @@ class Parameter(models.Model):
     class Meta:
         managed = False
         db_table = 'parameter'
+    
+    def __str__(self): #'parameter_name' is being used as attribute to identify Report objects 
+        return self.parameter_name  or '----- ERROR: NULL VALUE FOUND ----'
 
 
 # mainquestion. unit = currency. aggregate = summate
@@ -77,21 +106,31 @@ class ParameterTree(models.Model):
     class Meta:
         managed = False
 
+    def __str__(self): #'question' is being used as attribute to identify Report objects 
+        return self.question or '----- ERROR: NULL VALUE FOUND ----'
+
 
 # permitted to create different model
 class Report(models.Model):
     id = models.AutoField(primary_key=True, auto_created=True)
     name = models.CharField(max_length=100)
-    frequency = models.TextField(choices=[(1,"Weekly"),(2,"Monthly"),(3,"Quarterly")])
+    frequency = models.TextField(choices=[("1","Weekly"),("2","Monthly"),("3","Quarterly")])
     cutoff = models.IntegerField(default=15) # change default to 30
     question_count = models.IntegerField(default=24)
     companies = models.ManyToManyField(Player)
     question = models.ManyToManyField(ParameterTree)
     max_level_needed = models.IntegerField(default=3)
+    form_relase_date = models.IntegerField(default=1, validators=[MaxValueValidator(31),
+                                                                   MinValueValidator(1)])
+    form_active_days = models.IntegerField(default=15, validators=[MaxValueValidator(100),
+                                                                   MinValueValidator(1)])
 
     class Meta:
         managed = False
         db_table = "report"
+    
+    def __str__(self): #'name' is being used as attribute to identify Report objects 
+        return self.name
 #
 #
 # # main model
@@ -112,7 +151,7 @@ class Report(models.Model):
 class ReportVersion(models.Model):
     id = models.AutoField(primary_key=True, auto_created=True)
     name = models.CharField(max_length=100)
-    company = models.CharField(max_length=255, default='testCompany')
+    company = models.CharField(max_length=255, default='testCompany') # this should be a foriegn key
     report = models.ForeignKey(Report, on_delete=models.CASCADE)
     filled_count = models.IntegerField(default=0)
     is_submitted = models.BooleanField(default=False)
@@ -121,9 +160,10 @@ class ReportVersion(models.Model):
     approved_by_level = models.IntegerField(default=1)
     max_level_needed = models.IntegerField(default=5)
     date_created = models.DateTimeField(default=django.utils.timezone.now)
+    closing_time = models.DateTimeField(blank = True)
 
     def __str__(self):
-        return self.name
+        return str(self.id) + " - " + self.name
 
     class Meta:
         managed = False
@@ -179,6 +219,7 @@ class MainData(models.Model):
     end_date = models.DateField(blank=True, null=True)
     parameter = models.ForeignKey('Parameter', models.DO_NOTHING, blank=True, null=True)
     value = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    remark = models.CharField(max_length=200, blank=True, null=True)
     date_created = models.DateField(blank=True, null=True)
     source = models.CharField(max_length=45, blank=True, null=True)
     parametertree = models.ForeignKey(ParameterTree, on_delete=models.PROTECT, default=1)
@@ -208,6 +249,7 @@ class MainDataProd(models.Model):
     end_date = models.DateField(blank=True, null=True)
     parameter = models.ForeignKey('Parameter', models.DO_NOTHING, blank=True, null=True)
     value = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    remark = models.CharField(max_length=200, blank=True, null=True)
     date_created = models.DateField(blank=True, null=True)
     source = models.CharField(max_length=45, blank=True, null=True)
     parametertree = models.ForeignKey(ParameterTree, on_delete=models.PROTECT, default=1)
@@ -216,6 +258,29 @@ class MainDataProd(models.Model):
     class Meta:
         managed = False
         db_table = 'main_data_prod'
+
+# Table relations
+class ReportQuestion(models.Model):
+    id = models.AutoField(auto_created=True, primary_key=True)
+    report = models.ForeignKey(Report, on_delete=models.PROTECT)
+    parametertree = models.ForeignKey(ParameterTree, on_delete=models.PROTECT)
+    sequence = models.IntegerField(default=0, null=False)
+
+    class Meta:
+        managed = False
+        db_table = 'report_question'
+
+class ReportCompanies(models.Model):
+    id = models.AutoField(primary_key=True, auto_created=True)
+    report = models.ForeignKey(Report, on_delete=models.PROTECT, blank=True, null=True)
+    player = models.ForeignKey(Player, on_delete=models.PROTECT, blank=True, null=True) #is called industry
+
+    class Meta:
+        managed = False
+        db_table = "report_companies"
+    
+    def __str__(self): #'player_name' is being used as attribute to identify Report objects 
+        return self.report + " - " + self.player
 
 
 @receiver(pre_save, sender=ReportVersion)
@@ -318,6 +383,9 @@ def refresh_power_bi(sender, instance, created, **kwargs):
             player_id = Player.objects.filter(player_name=instance.company)[0].player_id
             try:
                 tmp = CalculatedParamFn()
+                tmpFoodtech = CalculatedParamFoodtechFn() 
+                if report_id == 14:
+                    tmpFoodtech.report_version_id(instance.id)
                 if report_id == 45:
                     tmp.calc_script_eb2b(player_id, start_date, end_date)
                 if report_id == 46:

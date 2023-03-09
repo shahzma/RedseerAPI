@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from datetime import date, timedelta
 from rest_framework.authtoken.models import Token
 from rest_framework import serializers
-from .models import Player, Parameter, MainData, Report, ParameterTree, ReportVersion, AuditTable
+from .models import Player, Parameter, MainData, Report, ParameterTree, ReportVersion, AuditTable, ReportQuestion
 from random import randrange
 
 
@@ -142,6 +142,10 @@ class ReportVersionGetSerializer(serializers.ModelSerializer):
 class ReportVersionArchivedGetSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         rep = super().to_representation(instance)
+        curr_report_object = Report.objects.filter(id=instance.report.id)[0]
+        rep['question_count'] = curr_report_object.question_count
+        rep['schedule'] = "monthly" 
+        rep['deadline_days'] = 30
         return rep
 
     class Meta:
@@ -186,8 +190,9 @@ class ReportVersionSerializer(serializers.ModelSerializer):
         # rep['is_submitted'] = False
         rep['last_modified_date'] = datetime.date.today()
         # print(Report.objects.filter(id=instance.report.id)[0].question) = none as question is many to many
-        rep_details = ReportSerializer(instance.report).data
+        report_details = ReportSerializer(instance.report).data
         # # is a list.testing for instance-id = 7
+        all_ques_sequence = ReportQuestion.objects.filter(report=instance.report)
         current_rep_results = MainData.objects.filter(report_version=instance.id)
         # # getting all previous ids which is less than current id and are of same report instance and
         # then choosing last3
@@ -197,16 +202,19 @@ class ReportVersionSerializer(serializers.ModelSerializer):
         print(ids)
         # getting form report result based on previous ids
         last_report_results=MainData.objects.filter(report_version__in=ids)
-        for i in rep_details['questions']:
+        for i in report_details['questions']:
         # i is a dict
+            current_ques_sequence = all_ques_sequence.filter(parametertree=i['id']).values()[0]['sequence']
+            i['sequence'] = current_ques_sequence
             for j in current_rep_results:
                 if i['id'] == j.parametertree.id: #all 37  questions
                     for k in i['sub_questions']:
                         # k['current_value'] = None
                         if k['id'] == j.parameter.parameter_id:
                             k['current_value'] = j.value
+                            k['remark'] = j.remark
 
-        for i in rep_details['questions']:
+        for i in report_details['questions']:
             for j in i['sub_questions']:
                 last_val = ''
                 for k in last_report_results:
@@ -221,13 +229,13 @@ class ReportVersionSerializer(serializers.ModelSerializer):
         # rep_result = ReportResultSerializer(instance.id).data
         # print(rep_result)
         rep['industry_name'] = Report.objects.filter(id=instance.report.id)[0].name
-        rep['id'] = rep_details['id']
+        rep['id'] = report_details['id']
         print(Player.objects.filter(player_name=instance.company))
         try:
             rep['excel_link'] = Player.objects.filter(player_name=instance.company)[0].excel_link
         except:
             rep['excel_link'] = ''
-        rep = {**rep_details, **rep}
+        rep = {**report_details, **rep}
         return rep
 
     class Meta:
