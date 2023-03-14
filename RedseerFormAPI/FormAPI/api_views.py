@@ -31,6 +31,8 @@ class ParameterLCView(ListCreateAPIView):
 #     lookup_url_kwarg = "id"
 #
 #
+
+
 class PlayerLCView(ListCreateAPIView):
     serializer_class = serializers.PlayerSerializer
     queryset = models.Player.objects
@@ -181,23 +183,33 @@ class ReportVersionCView(CreateAPIView):
                     for j in i['sub_questions']:
                         try:
                             # doing this bcoz data can be string /blank/integer etc
-                            j['current_value'] = float(j['current_value'])
                             parameter_obj = models.Parameter.objects.get(
                                 parameter_id=j['id'])
                             report_ver_obj = models.ReportVersion.objects.get(
                                 id=data['current_instance']['id'])
-                            report_res, created = models.MainData.objects.update_or_create(parameter=parameter_obj,
-                                                                                           parametertree=parametertree_obj,
-                                                                                           report_version=report_ver_obj,
-                                                                                           source='Benchmark',  # rename
-                                                                                           player=company_obj,
-                                                                                           start_date=start_date,
-                                                                                           end_date=end_date,
-                                                                                           defaults={'value': j['current_value'],
-                                                                                                     'date_created': datetime.date.today(), 'remark': j['remark']})
-                            report_res.save()
-                        except:
-                            print('error')
+                            if (j['current_value'] != ""):
+                                j['current_value'] = float(j['current_value'])
+                                report_res, created = models.MainData.objects.update_or_create(parameter=parameter_obj,
+                                                                                               parametertree=parametertree_obj,
+                                                                                               report_version=report_ver_obj,
+                                                                                               source='Benchmark',  # rename
+                                                                                               player=company_obj,
+                                                                                               start_date=start_date,
+                                                                                               end_date=end_date,
+                                                                                               defaults={'value': j['current_value'],
+                                                                                                         'date_created': datetime.date.today(), 'remark': j['remark']})
+                                report_res.save()
+                            else:
+                                previousData = models.MainData.objects.filter(parameter=parameter_obj,
+                                                                              parametertree=parametertree_obj,
+                                                                              report_version=report_ver_obj,
+                                                                              source='Benchmark',  # rename
+                                                                              player=company_obj,
+                                                                              start_date=start_date,
+                                                                              end_date=end_date)
+                                previousData.delete()
+                        except Exception as e:
+                            print('error-', e)
         except models.ReportVersion.DoesNotExist:
             # no need to create new entry in report result as this part will be triggered by scheduler
             new_report_ver = models.ReportVersion.objects.create(name=data["name"], report=report_obj,
