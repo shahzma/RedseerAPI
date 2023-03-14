@@ -10,8 +10,8 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 from datetime import date, timedelta
-from .service_utils import CalculatedParamFn
-from .service_utils_foodtech import CalculatedParamFoodtechFn
+from .utils.service_utils import CalculatedParamFn
+from .utils.service_utils_foodtech import CalculatedParamFoodtechFn
 import calendar
 import datetime
 import requests

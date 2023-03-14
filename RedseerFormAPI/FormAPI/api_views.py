@@ -1,7 +1,9 @@
+from django.http import JsonResponse
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, CreateAPIView, ListAPIView
 from django.contrib.auth.models import User
 from rest_framework import viewsets
 from . import serializers, models
+from .utils.form_validate import ValidateForm
 from rest_framework.response import Response
 import calendar
 import datetime
@@ -335,3 +337,14 @@ class AuditReportVersionLCView(ListCreateAPIView):
                 self.queryset = self.queryset.filter(
                     date_created__year=today.year, date_created__month=today.month-1)
         return self.queryset
+
+
+class ValidateFormAPI(ListCreateAPIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+
+    def post(self, request):
+        validator = ValidateForm()
+        anomalyOutput = validator.find_anomalies(request.data)
+        # res = json.loads(dataframeObjectOutput.to_json(orient='records')) #import json
+        return JsonResponse(anomalyOutput, safe=False)

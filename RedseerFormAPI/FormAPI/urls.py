@@ -1,6 +1,6 @@
 from .api_views import PlayerLCView, ParameterLCView, ReportResultLCView, ReportLCView, SectorPlayerLView, ParameterTreeLCView, ReportVersionArchivedLView,\
     ReportVersionRUDView, ReportVersionLView, ReportVersionCView, UserViewSet, ReportVersionIDView,QuestionIDView,\
-    AuditTableLCView, AuditReportVersionLCView
+    AuditTableLCView, AuditReportVersionLCView, ValidateFormAPI
 from rest_framework import routers
 from django.urls import path, include
 
@@ -51,6 +51,10 @@ formID_urls = [
     path("", ReportVersionIDView.as_view(), name="lc"),
 ]
 
+form_validate_urls = [
+    path("", ValidateFormAPI.as_view(), name="lc"),
+]
+
 questionID_urls = [
     path("", QuestionIDView.as_view(), name="lc"),
 ]
@@ -88,6 +92,7 @@ urlpatterns = [
     path("forms/", include((reportversion_urls, "reportversion"), namespace="reportversion")),
     path("forms-archived/", include((reportversion_archived_urls, "reportversion_archived"), namespace="reportversion_archived")),
     path("formresult/", include((formresult_urls, "formresult"), namespace="formresult")),
+    path("form-validate/", include((form_validate_urls, "form_validate"), namespace="form_validate")),
     path("reportresult/", include((reportresult_urls, "reportresult"), namespace="reportresult")),
     path("formID/", include((formID_urls, "formID"), namespace="formID")),
     path("questionID/", include((questionID_urls, "questionID"), namespace="questionID")),
