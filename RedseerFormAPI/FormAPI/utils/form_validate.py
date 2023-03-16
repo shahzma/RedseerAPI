@@ -203,6 +203,8 @@ class ValidateForm:
         parameter_list = [id_value for id_value in webform_dict['parameters']
                           if not id_value.get('isAnomalyDismissed', True)]
         # print(parameter_list)
+        if not parameter_list:  # case when all are isAnomalyDismissed=true,=> empty parameter_list
+            return []
         webform_df = pd.DataFrame.from_dict(
             parameter_list).drop('isAnomalyDismissed', axis=1)
         webform_df.rename(columns={"id": "parameter_id"}, inplace=True)
