@@ -2,28 +2,25 @@
 # import matplotlib.pyplot as plt
 import pandas as pd
 import pymysql
+from django.conf import settings
+import os
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime, date
 import math
 
+db_settings = settings.DATABASES['default']
+
 
 class ValidateForm:
 
-    def get_connection_url(self, database_name):
+    def get_connection_url(self):
         package = "mysql+pymysql"
-        user_name = "redroot"
-        password = "seer#123"
-        database_name = database_name
-        host_name = "127.0.0.1"  # localhost
-        # host_name = "redmysql.mysql.database.azure.com" #server
-        port = "3306"
-
-        database_connection_url = f"{package}://{user_name}:{password}@{host_name}:{port}/{database_name}"
+        database_connection_url = f"{package}://{db_settings['USER']}:{db_settings['PASSWORD']}@{db_settings['HOST']}:{db_settings['PORT']}/{db_settings['NAME']}"
         return database_connection_url
 
-    def get_db_connection(self, database_name):
-        database_connection_url = self.get_connection_url(database_name)
+    def get_db_connection(self):
+        database_connection_url = self.get_connection_url()
         connect_args = {'charset': 'latin1'}
         # connect_args = {'ssl': {'ttls': True}}
         engine = create_engine(database_connection_url,
@@ -110,7 +107,7 @@ class ValidateForm:
         return Anomaly_Prediction_df
 
     def final_classification(self, Anomaly_Prediction_df, player_id):
-        corr_df = pd.read_csv("/Users/amardeepsaini/Documents/GITLAB/RedseerAPI/RedseerFormAPI/FormAPI/utils/corr_df.csv").query(
+        corr_df = pd.read_csv(os.path.join(settings.BASE_DIR, './RedseerFormAPI/FormAPI/utils/corr_df.csv')).query(
             "player_id == " + str(player_id))
         Actual_Observed_Anomaly = []
         for key, value_df in Anomaly_Prediction_df.groupby("parameter_id"):
@@ -169,8 +166,8 @@ class ValidateForm:
     def find_anomalies(self, webform_dict):
         # global player_id, reference_date
         database_name = "content_data"
-        # db_session, db_conn = self.get_db_connection(database_name)
-        db_session, db_conn = self.get_db_connection(database_name)
+        # db_session, db_conn = self.get_db_connection()
+        db_session, db_conn = self.get_db_connection()
 
         players_df = pd.read_sql(text(
             "SELECT player_id, player_name, industry_id FROM player"), db_conn)

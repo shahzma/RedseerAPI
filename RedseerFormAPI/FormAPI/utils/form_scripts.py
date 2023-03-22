@@ -1,6 +1,7 @@
 import json
 import requests
 import pandas as pd
+from django.conf import settings
 import pymysql
 from datetime import datetime
 from sqlalchemy import create_engine, text
@@ -8,21 +9,17 @@ from sqlalchemy.orm import sessionmaker
 # from threading import Semaphore
 
 
-class FormAutomation:
-    def get_connection_url(self, database_name):
-        package = "mysql+pymysql"
-        user_name = "redroot"
-        password = "seer#123"
-        database_name = database_name
-        host_name = "127.0.0.1"  # localhost
-        # host_name = "redmysql.mysql.database.azure.com" #server
-        port = "3306"
+db_settings = settings.DATABASES['default']
 
-        database_connection_url = f"{package}://{user_name}:{password}@{host_name}:{port}/{database_name}"
+
+class FormAutomation:
+    def get_connection_url(self):
+        package = "mysql+pymysql"
+        database_connection_url = f"{package}://{db_settings['USER']}:{db_settings['PASSWORD']}@{db_settings['HOST']}:{db_settings['PORT']}/{db_settings['NAME']}"
         return database_connection_url
 
-    def get_db_connection(self, database_name):
-        database_connection_url = self.get_connection_url(database_name)
+    def get_db_connection(self):
+        database_connection_url = self.get_connection_url()
         connect_args = {'charset': 'latin1'}
         # connect_args = {'ssl': {'ttls': True}}
         engine = create_engine(database_connection_url,
@@ -36,12 +33,11 @@ class FormAutomation:
 
     def forms_release(self):
         db = pymysql.connect(
-            host='127.0.0.1',
-            # host="redmysql.mysql.database.azure.com",  # server
-            port=3306,
-            user='redroot',
-            password="seer#123",
-            db='content_data',
+            host=db_settings['HOST'],
+            port=int(db_settings['PORT']),
+            user=db_settings['USER'],
+            password=db_settings['PASSWORD'],
+            db=db_settings['NAME'],
             ssl={'ssl': {'tls': True}}
         )
         cur = db.cursor()
@@ -133,11 +129,11 @@ class FormAutomation:
         # semaphore.release()
 
         # db = pymysql.connect(
-        #     host='127.0.0.1',
-        #     port=3306,
-        #     user='redroot',
-        #     password="seer#123",
-        #     db='content_data',
+        #     host=db_settings['HOST'],
+        #     port=int(db_settings['PORT']),
+        #     user=db_settings['USER'],
+        #     password=db_settings['PASSWORD'],
+        #     db=db_settings['NAME'],
         #     ssl={'ssl': {'tls': True}}
         # )
         # cur = db.cursor()
@@ -146,8 +142,7 @@ class FormAutomation:
         # print("Forms", len(formsTouples), formsTouples[0])
         # cur.close()
         try:
-            database_name = "content_data"
-            db_session, db_conn = self.get_db_connection(database_name)
+            db_session, db_conn = self.get_db_connection()
             formsOfThisMonth = pd.read_sql(text(
                 f"SELECT * FROM reportversion WHERE date_created >= '{monthStartDate}'"), db_conn)
             formsOfThisMonth = formsOfThisMonth.loc[formsOfThisMonth['is_submitted'] == 1]

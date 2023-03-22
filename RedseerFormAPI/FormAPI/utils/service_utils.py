@@ -6,11 +6,13 @@ import pymysql
 
 import datetime
 from datetime import datetime
+from django.conf import settings
 from datetime import date
 import calendar
 from calendar import monthrange
 import sys
 
+db_settings = settings.DATABASES['default']
 # change address in cursor
 
 
@@ -18,11 +20,11 @@ class CalculatedParamFn:
     @staticmethod
     def par_val_dict(pl_id, sd, ed):
         db = pymysql.connect(
-            host='127.0.0.1',
-            port=3306,
-            user='redroot',
-            password="seer#123",
-            db='content_data',
+            host=db_settings['HOST'],
+            port=int(db_settings['PORT']),
+            user=db_settings['USER'],
+            password=db_settings['PASSWORD'],
+            db=db_settings['NAME'],
             ssl={'ssl': {'tls': True}}
         )
 
@@ -57,11 +59,11 @@ class CalculatedParamFn:
     def InsertORUpdate(dff):
         data_dict = dff.to_dict(orient='records')
         db = pymysql.connect(
-            host='127.0.0.1',
-            port=3306,
-            user='redroot',
-            password="seer#123",
-            db='content_data',
+            host=db_settings['HOST'],
+            port=int(db_settings['PORT']),
+            user=db_settings['USER'],
+            password=db_settings['PASSWORD'],
+            db=db_settings['NAME'],
             ssl={'ssl': {'tls': True}}
         )
 
@@ -98,13 +100,14 @@ class CalculatedParamFn:
     @staticmethod
     def ind_players(a):
         db = pymysql.connect(
-            host='127.0.0.1',
-            port=3306,
-            user='redroot',
-            password="seer#123",
-            db='content_data',
+            host=db_settings['HOST'],
+            port=int(db_settings['PORT']),
+            user=db_settings['USER'],
+            password=db_settings['PASSWORD'],
+            db=db_settings['NAME'],
             ssl={'ssl': {'tls': True}}
         )
+
         cur = db.cursor()
         cur.execute("select * from player where industry_id= '" + str(a) + "';")
         pl = cur.fetchall()

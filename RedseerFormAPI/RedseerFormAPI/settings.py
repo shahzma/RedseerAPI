@@ -14,7 +14,8 @@ from pathlib import Path
 import pymysql
 import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # Quick-start development settings - unsuitable for production
@@ -94,7 +95,8 @@ DATABASES = {
         'NAME': 'content_data',
         'USER': 'redroot',
         'PASSWORD': 'seer#123',
-        'HOST': '127.0.0.1',
+        # 'HOST': '127.0.0.1',
+        'HOST': 'redmysql.mysql.database.azure.com', #server
         'PORT': '3306',
     }
 }

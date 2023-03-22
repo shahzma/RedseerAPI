@@ -26,7 +26,8 @@ from .apps import FormapiConfig as AppConfig
 # remove many to many from parameter tree and add  parent_parameter as foriegn key
 # parent_parameter-NAME
 
-cred = credentials.Certificate('/Users/shahzmaalif/Documents/GitHub/RedseerAPI/RedseerFormAPI/coeus-8be26-firebase-adminsdk-panol-ec5a6f11fd.json')
+cred = credentials.Certificate(os.path.join(
+    settings.BASE_DIR, './coeus-8be26-firebase-adminsdk-panol-ec5a6f11fd.json'))
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 load_dotenv()

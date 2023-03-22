@@ -10,7 +10,10 @@ from datetime import datetime
 from datetime import date
 import calendar
 import msal
+from django.conf import settings
 import sys
+
+db_settings = settings.DATABASES['default']
 
 
 class CalculatedParamFoodtechFn:
@@ -763,8 +766,14 @@ class CalculatedParamFoodtechFn:
     def report_version_id(self, rep_ver_id):
         print("Foodtech:- calculate prapameter script started for report_version_id=", rep_ver_id)
         try:
-            db = pymysql.connect(host='127.0.0.1', port=3306, user='redroot',
-                                 password='seer#123', db='content_data', ssl={'ssl': {'tls': True}})
+            db = pymysql.connect(
+                host=db_settings['HOST'],
+                port=int(db_settings['PORT']),
+                user=db_settings['USER'],
+                password=db_settings['PASSWORD'],
+                db=db_settings['NAME'],
+                ssl={'ssl': {'tls': True}}
+            )
             cur = db.cursor()
             cur.execute('select parameter_id, parameter_name from parameter;')
             parameters = cur.fetchall()
