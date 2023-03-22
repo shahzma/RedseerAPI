@@ -1,7 +1,8 @@
 asgiref==3.5.0
-backports.zoneinfo==0.2.1
+backports.zoneinfo==0.2.1;python_version<"3.9"
 configparser==5.2.0
 Django==4.0.1
+django-apscheduler==0.6.2
 django-cors-headers==3.11.0
 djangorestframework==3.13.1
 firebase-admin==6.0.1
