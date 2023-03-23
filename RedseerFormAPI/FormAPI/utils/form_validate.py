@@ -107,7 +107,7 @@ class ValidateForm:
         return Anomaly_Prediction_df
 
     def final_classification(self, Anomaly_Prediction_df, player_id):
-        corr_df = pd.read_csv(os.path.join(settings.BASE_DIR, './RedseerFormAPI/FormAPI/utils/corr_df.csv')).query(
+        corr_df = pd.read_csv(os.path.join(settings.BASE_DIR, './FormAPI/utils/corr_df.csv')).query(
             "player_id == " + str(player_id))
         Actual_Observed_Anomaly = []
         for key, value_df in Anomaly_Prediction_df.groupby("parameter_id"):
