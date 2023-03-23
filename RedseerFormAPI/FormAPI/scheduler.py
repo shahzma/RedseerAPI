@@ -61,7 +61,7 @@ def start():
 
     # for the testing purpose, every 10 second later
     # scheduler.add_job(
-    #     approve_froms_job,
+    #     test_job,
     #     trigger="cron",
     #     day=21,
     #     hour=14,
@@ -71,9 +71,9 @@ def start():
 
     # for the testing purpose, every 10 second later
     # scheduler.add_job(
-    #     approve_froms_job,
+    #     test_job,
     #     trigger="interval",
-    #     seconds=2,
+    #     seconds=15,
     #     id=testJobId
     # )
 
