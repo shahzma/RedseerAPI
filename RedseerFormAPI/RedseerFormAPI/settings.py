@@ -13,6 +13,10 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 from pathlib import Path
 import pymysql
 import os
+import dj_database_url
+from urllib.parse import quote
+from dotenv import load_dotenv
+load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # BASE_DIR = Path(__file__).resolve().parent.parent
@@ -89,19 +93,23 @@ CORS_ALLOW_ALL_ORIGINS = True
 #     }
 # }
 
+# get the value of the DATABASE_URL environment variable
+db_url = os.environ.get('DATABASE_URL')
+print("DATABASE_URL=",db_url)
+
+# if the DATABASE_URL not passed, raise error
+if not db_url:
+    raise Exception("Error, DATABASE_URL is not passed, required format is => mysql://user:pass@localhost:3000/dbname")
+
+# quote is used to encode special charactor like #, except :/@
+# then parse is used to handle encoded url
+# for url without special charactors only dj_database_url.config could have been used
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'content_data',
-        'USER': 'redroot',
-        'PASSWORD': 'seer#123',
-        # 'HOST': '127.0.0.1',
-        'HOST': 'redmysql.mysql.database.azure.com', #server
-        'PORT': '3306',
-    }
+    'default': dj_database_url.parse(quote(db_url, ':/@'))
+    # 'default': dj_database_url.config(db_url)
 }
 
-# use for prod
+# Old DB connection
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.mysql',
