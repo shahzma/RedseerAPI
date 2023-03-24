@@ -70,8 +70,12 @@ class ValidateForm:
                 threshold_2_LB = del_change_t1*(1 - pv_change_factor)
                 boolean_exp_1 = (ref_month_change > threshold_1_UB) | (
                     ref_month_change < threshold_1_LB)
-                boolean_exp_2 = (ref_month_change > threshold_2_UB) | (
-                    ref_month_change < threshold_2_LB)
+                if del_change_t1 > 0:
+                    boolean_exp_2 = (ref_month_change > threshold_2_UB) | (
+                        ref_month_change < threshold_2_LB)
+                else:
+                    boolean_exp_2 = (ref_month_change < threshold_2_UB) | (
+                        ref_month_change > threshold_2_LB)
 
                 if boolean_exp_1:  # Past trend anomaly
                     Self_trend_anomaly = "Yes"
@@ -198,7 +202,7 @@ class ValidateForm:
             ref_year = webform_date.year - 1
         reference_date = date(ref_year, ref_month, 1)
         parameter_list = [id_value for id_value in webform_dict['parameters']
-                          if not id_value.get('isAnomalyDismissed', True)]
+                          if not (id_value.get('isAnomalyDismissed', True) or not (id_value['value']))]
         # print(parameter_list)
         if not parameter_list:  # case when all are isAnomalyDismissed=true,=> empty parameter_list
             return []
@@ -208,7 +212,7 @@ class ValidateForm:
         webform_df['start_date'] = reference_date
         webform_df['player_id'] = player_id
         player_main_df = filter_main_df[(filter_main_df["player_id"] == player_id) & (
-            filter_main_df["start_date"] <= reference_date) & filter_main_df['parameter_id'].isin(webform_df['parameter_id'])]
+            filter_main_df["start_date"] < reference_date) & filter_main_df['parameter_id'].isin(webform_df['parameter_id'])]
         player_main_df = player_main_df[[
             "player_id", "parameter_id", "start_date", "value"]]
         # ind_anomaly_df = industry_trend(player_id, reference_date, webform_df)
