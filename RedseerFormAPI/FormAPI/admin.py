@@ -61,7 +61,7 @@ class MainDataAdmin(admin.ModelAdmin):
 class AuditTableAdmin(admin.ModelAdmin):
     list_display = ('user', 'user_level', 'form_id')
     ordering = ('user_level',)
-    search_fields = ['user', 'form_id__name']
+    search_fields = ['user', 'form_id__name', 'form_id__id']
 
 
 class MainDataProdAdmin(admin.ModelAdmin):

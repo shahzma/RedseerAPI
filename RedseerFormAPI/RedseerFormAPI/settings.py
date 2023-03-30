@@ -94,12 +94,13 @@ CORS_ALLOW_ALL_ORIGINS = True
 # }
 
 # get the value of the DATABASE_URL environment variable
-db_url = os.environ.get('DATABASE_URL')
-print("DATABASE_URL=",db_url)
+db_url = os.getenv('DATABASE_URL')
+print("DATABASE_URL =", db_url)
 
 # if the DATABASE_URL not passed, raise error
 if not db_url:
-    raise Exception("Error, DATABASE_URL is not passed, required format is => mysql://user:pass@localhost:3000/dbname")
+    raise Exception(
+        "Error, DATABASE_URL is not passed, required format is => mysql://user:pass@localhost:3000/dbname")
 
 # quote is used to encode special charactor like #, except :/@
 # then parse is used to handle encoded url
@@ -169,16 +170,26 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 pymysql.install_as_MySQLdb()
 
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_USE_TLS = True
-EMAIL_PORT = 587
-EMAIL_HOST_USER = 'shahzmaalif@gmail.com'
-EMAIL_HOST_PASSWORD = 'mxwbbcedjobccudu'
+EMAIL_BACKEND = os.getenv(
+    'EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+print("EMAIL_BACKEND =", EMAIL_BACKEND)
 
+EMAIL_HOST = os.getenv('EMAIL_HOST')
+print("EMAIL_HOST =", EMAIL_HOST)
+if not EMAIL_HOST:
+    raise Exception("Error, EMAIL_HOST is not passed")
 
-# EMAIL_HOST = 'outlook.office365.com'
-# EMAIL_HOST_USER = 'webforms@benchmarks.digital'
-# EMAIL_HOST_PASSWORD = 'Hok59524'
-# EMAIL_USE_TLS = True
-# DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+print("EMAIL_HOST_USER =", EMAIL_HOST_USER)
+if not EMAIL_HOST_USER:
+    raise Exception("Error, EMAIL_HOST_USER is not passed")
+
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+print("EMAIL_HOST_PASSWORD =", EMAIL_HOST_PASSWORD)
+if not EMAIL_HOST_PASSWORD:
+    raise Exception("Error, EMAIL_HOST_PASSWORD is not passed")
+
+EMAIL_USE_TLS = (os.getenv('DEBUG', 'True') == 'True')
+print("EMAIL_USE_TLS =", EMAIL_USE_TLS)
+
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
