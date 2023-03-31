@@ -189,7 +189,7 @@ print("EMAIL_HOST_PASSWORD =", EMAIL_HOST_PASSWORD)
 if not EMAIL_HOST_PASSWORD:
     raise Exception("Error, EMAIL_HOST_PASSWORD is not passed")
 
-EMAIL_USE_TLS = (os.getenv('DEBUG', 'True') == 'True')
+EMAIL_USE_TLS = (os.getenv('EMAIL_USE_TLS', 'True') == 'True')
 print("EMAIL_USE_TLS =", EMAIL_USE_TLS)
 
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
