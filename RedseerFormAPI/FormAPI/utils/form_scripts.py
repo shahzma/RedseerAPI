@@ -118,6 +118,7 @@ class FormAutomation:
                     print('Form create error-', e)
 
     def forms_auto_approve(self):
+        todaysDate = datetime.now()
         monthStartDate = datetime.now().replace(
             day=1, hour=0, minute=0, second=0, microsecond=0)
         # # Create a Semaphore with a maximum of 1 concurrent instance
@@ -146,14 +147,26 @@ class FormAutomation:
             formsOfThisMonth = pd.read_sql(text(
                 f"SELECT * FROM reportversion WHERE date_created >= '{monthStartDate}'"), db_conn)
             formsOfThisMonth = formsOfThisMonth.loc[formsOfThisMonth['is_submitted'] == 1]
-            formsOfThisMonth['approved_by_level'] = formsOfThisMonth['max_level_needed']
-            formsOfThisMonth['email'] = "shubhangi.k@redseerconsulting.com"
-            # formsOfThisMonth = formsOfThisMonth.loc[formsOfThisMonth['id'] == 2053]
+            formsOfThisMonth = formsOfThisMonth.loc[formsOfThisMonth['approved_by_level']
+                                                    != formsOfThisMonth['max_level_needed']]
+            formsOfThisMonth['email'] = "system@redseerconsulting.com"
 
-            update_statement = "UPDATE reportversion SET approved_by_level = :approved_by_level, email = :email WHERE id = :id"
+            # Below lines are for testing and debugging
+            # formsOfThisMonth = formsOfThisMonth.loc[formsOfThisMonth['id'] == 2053]
+            # formsOfThisMonth = formsOfThisMonth.iloc[:1]
+            # print("ApprovalList-", formsOfThisMonth)
+
+            update_statement = "UPDATE reportversion SET approved_by_level = :final_approval_level, email = :email WHERE id = :id"
+            insert_statement = "INSERT INTO audit_table (user, user_level, date, action, form_id_id) VALUES (:user, :user_level, :date, :action, :form_id_id)"
+
             for index, row in formsOfThisMonth.iterrows():
                 db_conn.execute(text(update_statement), {
-                                "approved_by_level": row['approved_by_level'], "email": row['email'], "id": row['id']})
+                                "final_approval_level": row['max_level_needed'], "email": row['email'], "id": row['id']})
+                for approvalLevel in range(row['approved_by_level']+1, row['max_level_needed']+1):
+                    db_conn.execute(text(insert_statement), {
+                                    "user": row['email'], "user_level": approvalLevel, "date": todaysDate, "action": 1, "form_id_id": row['id']})
+                print(
+                    f"Forms autoapprove success! - {row['id']} - {row['company']}!")
 
             db_conn.commit()
             db_conn.close()
