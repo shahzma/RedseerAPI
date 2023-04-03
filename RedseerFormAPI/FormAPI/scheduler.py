@@ -39,7 +39,7 @@ def start():
     scheduler = BackgroundScheduler(timezone=TIME_ZONE)
     # scheduler.add_jobstore(DjangoJobStore(), "default")#This is to store the all jobs with there createFormsJobId
 
-    # To run job at midnight of 1st of every month in UTC time, means 5:30 AM india time
+    # To run job at midnight of 1st of every month in UTC time, means 05:30 india time
     scheduler.add_job(
         forms_release_job,
         trigger="cron",
@@ -49,13 +49,13 @@ def start():
         id=createFormsJobId
     )
 
-    # To run job at 4PM IST of last day of every month in UTC time, means 5:30 AM india time
+    # To run job at 16:00 IST of last day of every month in UTC time, means 10:30 UTC time
     last_day_of_month = calendar.monthrange(
         datetime.now().year, datetime.now().month)[1]
     scheduler.add_job(
         approve_froms_job,
         trigger=CronTrigger(day=last_day_of_month, month='1-12',
-                            hour=10, minute=30, timezone=pytz.utc),  # 4PM IST
+                            hour=10, minute=30, timezone=pytz.utc),  # 16:00 IST
         id=approveFormsJobId
     )
 
