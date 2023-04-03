@@ -73,6 +73,7 @@ class Player(models.Model):
     industry = models.ForeignKey(Industry, models.DO_NOTHING, blank=True, null=True) #is called industry
     excel_link = models.CharField(max_length=2000)
     last_date_day = models.IntegerField(default=28, blank=True, null=True)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         managed = False
@@ -280,8 +281,8 @@ class ReportCompanies(models.Model):
         managed = False
         db_table = "report_companies"
     
-    def __str__(self): #'player_name' is being used as attribute to identify Report objects 
-        return self.report + " - " + self.player
+    def __str__(self):  # 'player_name' is being used as attribute to identify Report objects
+        return self.report.name + " - " + self.player.player_name
 
 
 @receiver(pre_save, sender=ReportVersion)
