@@ -6,6 +6,9 @@ import pymysql
 from datetime import datetime
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
+from rest_framework.request import Request
+from rest_framework.test import APIRequestFactory
+from ..api_views import ReportVersionCView
 # from threading import Semaphore
 
 
@@ -45,16 +48,15 @@ class FormAutomation:
         # calculate the last report version Id
         cur.execute('select * from reportversion')
         q = cur.fetchall()
-        lastReportVersionId = q[-1][0]
-        # print("lastReportVersionId-",lastReportVersionId)
+        lastReportVersionId = -1
+        if len(q) > 0:
+            lastReportVersionId = q[-1][0]
 
         cur.execute("select player_name, report.id from((industry INNER JOIN report ON industry.industry_name = report.name) INNER JOIN player ON industry.industry_id = player.industry_id and player.is_active = 1);")
         playersTuples = cur.fetchall()
         playersDataframe = pd.DataFrame.from_dict(playersTuples)
-        # print("playersDataframe-",playersDataframe)
 
         playersIndustry = dict(zip(playersDataframe[0], playersDataframe[1]))
-        # print("playersIndustry-", playersIndustry)
 
         industryWiseData = {}
         for i in playersIndustry:
@@ -63,7 +65,6 @@ class FormAutomation:
             else:
                 industryWiseData[playersIndustry[i]
                                  ] = industryWiseData[playersIndustry[i]]+[i]
-        # print("industryWiseData-", industryWiseData)
 
         # industryWiseDataExample = {45: [
         #     'Udaan_eFashion',
@@ -86,12 +87,27 @@ class FormAutomation:
         #     '1MG B2B'
         # ]}
 
-        url = "https://coeus.redseerconsulting.com/formresult/1/1/"
+        print("Form will be created for -", industryWiseData)
+        url = "/formresult/1/1/"
+        factory = APIRequestFactory()
         for i in industryWiseData:
             for j in industryWiseData[i]:
                 lastReportVersionId += 1
                 created_at = datetime.today().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-                payload = json.dumps({
+                # payload = json.dumps({
+                #     "name": j+' Input',
+                #     "company": j,
+                #     "current_instance": {
+                #         "id": lastReportVersionId,
+                #         "created_at": created_at,
+                #     },
+                #     "id": i
+                # })
+                # headers = {
+                #     'Authorization': 'Token f810db83974e8cf8e1b0795bfdc5fcd90d8b3e6b',
+                #     'Content-Type': 'application/json'
+                # }
+                request_data = {
                     "name": j+' Input',
                     "company": j,
                     "current_instance": {
@@ -99,23 +115,29 @@ class FormAutomation:
                         "created_at": created_at,
                     },
                     "id": i
-                })
-                headers = {
-                    'Authorization': 'Token f810db83974e8cf8e1b0795bfdc5fcd90d8b3e6b',
-                    'Content-Type': 'application/json'
                 }
                 try:
-                    response = requests.request(
-                        "POST", url, headers=headers, data=payload)
-                    # print(response.text)
-                    if response.ok:
-                        print(
-                            f"Form Create success id={lastReportVersionId}, player={j}, created_at={created_at}")
+                    request = factory.post(url, request_data, format='json')
+                    # response = requests.request(
+                    #     "POST", url, headers=headers, data=payload)
+                    view = ReportVersionCView.as_view()
+                    response = view(request)
+                    if response.status_code == 200:
+                        if 'text/html' in response.headers['content-type']:
+                            # if response.content_type == 'application/json':
+                            response.render()
+                            content = json.loads(response.content)
+                            print(
+                                f"Form Create success id={content['current_instance']['id']}, player={j}, created_at={content['current_instance']['created_at']}")
+                        else:
+                            print(
+                                f"Form Create success id={content['current_instance']['id']}, player={j}, created_at={content['current_instance']['created_at']}, some error might be expected")
                     else:
-                        print('error_player = ', j)
-                        print('error_report_id = ', i)
+                        print(
+                            f"Form Create error, player={j} and report_id={i}")
                 except Exception as e:
-                    print('Form create error-', e)
+                    print(
+                        f"Form Create error, player={j} and report_id={i}", e)
 
     def forms_auto_approve(self):
         todaysDate = datetime.now()
