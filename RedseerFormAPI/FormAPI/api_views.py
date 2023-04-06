@@ -1,6 +1,7 @@
 from django.http import JsonResponse
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, CreateAPIView, ListAPIView
 from django.contrib.auth.models import User
+from django.utils import timezone
 from rest_framework import viewsets
 from . import serializers, models
 from .utils.form_validate import ValidateForm
@@ -142,6 +143,21 @@ class ReportVersionArchivedLView(ListAPIView):
             qs = qs.filter(company=playerName)
         qs = qs.filter(date_created__month=selected_month)
         qs = qs.filter(date_created__year=selected_year)
+        return qs
+
+
+class ReportVersionActiveLView(ListAPIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+    serializer_class = serializers.ReportVersionActiveGetSerializer
+    queryset = models.ReportVersion.objects
+
+    def get_queryset(self):
+        qs = self.queryset
+        current_month = timezone.now().month
+        current_year = timezone.now().year
+        qs = qs.filter(date_created__month=current_month)
+        qs = qs.filter(date_created__year=current_year)
         return qs
 
 

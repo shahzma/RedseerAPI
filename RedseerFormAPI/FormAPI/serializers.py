@@ -153,6 +153,29 @@ class ReportVersionArchivedGetSerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = ['id']
 
+
+class ReportVersionActiveGetSerializer(serializers.ModelSerializer):  
+    current_instance = serializers.SerializerMethodField()
+    def get_current_instance(self, obj):
+        return {
+            'id': obj.id,
+            'created_at': obj.date_created
+        }
+    class Meta:
+        model = ReportVersion
+        fields = "__all__"
+        read_only_fields = ['id']
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep['last_modified_date'] = datetime.date.today()
+        curr_report_object = Report.objects.filter(id=instance.report.id)[0]
+        rep['question_count'] = curr_report_object.question_count
+        rep.pop('date_created')
+        rep['schedule'] = "monthly" 
+        rep['deadline_days'] = 30
+        rep['industry_name'] = curr_report_object.name
+        return rep
+    
 #ignore
 # class ReportVersionPostSerializer(serializers.ModelSerializer):
 
