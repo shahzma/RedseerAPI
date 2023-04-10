@@ -36,10 +36,10 @@ class ParameterTreeAdmin(admin.ModelAdmin):
 
 
 class ReportAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'max_level_needed',
+    list_display = ('id', 'name', 'industry', 'max_level_needed',
                     'form_relase_date', 'form_active_days')
     ordering = ('id',)
-    search_fields = ['id', 'name']
+    search_fields = ['id', 'name', 'industry__industry_id']
 
 
 class ReportVersionAdmin(admin.ModelAdmin):
