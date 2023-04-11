@@ -17,7 +17,8 @@ class IndustryAdmin(admin.ModelAdmin):
 
 
 class PlayerAdmin(admin.ModelAdmin):
-    list_display = ('player_id', 'player_name', 'industry', 'last_date_day', 'is_active')
+    list_display = ('player_id', 'player_name', 'industry',
+                    'last_date_day', 'is_active')
     ordering = ('player_id',)
     search_fields = ['player_id', 'player_name',
                      'industry__industry_name', 'last_date_day']

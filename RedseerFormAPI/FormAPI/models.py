@@ -292,24 +292,33 @@ class ReportCompanies(models.Model):
 def notify_denial_by_email(sender, instance, **kwargs):
     # previous here refers to current instance of row in reportversion table
     try:
+        print(
+            f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: inside notify_denial_by_email fucntion, formid -', instance.id)
         previous = ReportVersion.objects.filter(id=instance.id)
-        print('email will be sent to notify if denial by email')
-        # below condition works bea=cause no email exists for 1st submission
-        # previous[0 wont work if there is no previous instance hence not work for forms which are new. Also issues with others
-        if previous[0].is_submitted != instance.is_submitted:
-            print('check submit condition')
+        # below condition works beacause no email exists for 1st submission
+        # previous[0] wont work if there is no previous instance like when new forms getting created. Also issues with others
+        if previous[0].is_submitted == 1 and instance.is_submitted == 0 and instance.status == 2:
+            print(
+                f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Form {instance.id} has been rejected, sending rejection notification...')
             if previous[0].email:
-                print(previous[0].email)
-                msg = EmailMessage(
-                    'WebForm Denied',
-                    f'Welcome Back , <br><br> Your Webform【{previous[0].name}】was denied',
-                    settings.EMAIL_HOST_USER,
-                    [previous[0].email]
-                )
-                msg.content_subtype = "html"
-                mail_status = msg.send()
+                try:
+                    msg = EmailMessage(
+                        'WebForm Denied',
+                        f'Welcome Back , <br><br> Your Webform【{previous[0].name}】was denied',
+                        settings.EMAIL_HOST_USER,
+                        [previous[0].email]
+                    )
+                    msg.content_subtype = "html"
+                    mail_status = msg.send()
+                    if (mail_status == 1):
+                        print(
+                            f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Form {instance.id}, rejection notification sent to {previous[0].email}')
+                except Exception as e:
+                    print(
+                        f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: Form {instance.id} rejection notification error-', e)
             else:
-                print('no email present')
+                print(
+                    f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: Form {instance.id} rejection notification issue- No email present!')
     except:
         pass
 

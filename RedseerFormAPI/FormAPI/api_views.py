@@ -186,6 +186,7 @@ class ReportVersionCView(CreateAPIView):
             new_report_ver.is_submitted = data['is_submitted']
             new_report_ver.filled_count = data['filled_count']
             new_report_ver.email = data['email']
+            new_report_ver.status = data['status']
             if data.get('approved_by_level') != None:
                 new_report_ver.approved_by_level = data['approved_by_level']
             # update code for reportresult
@@ -213,7 +214,9 @@ class ReportVersionCView(CreateAPIView):
                                                                                                start_date=start_date,
                                                                                                end_date=end_date,
                                                                                                defaults={'value': j['current_value'],
-                                                                                                         'date_created': datetime.date.today(), 'remark': j['remark']})
+                                                                                                         'date_created': datetime.date.today(),
+                                                                                                         'remark': j['remark'],
+                                                                                                         })
                                 report_res.save()
                             else:
                                 previousData = models.MainData.objects.filter(parameter=parameter_obj,
