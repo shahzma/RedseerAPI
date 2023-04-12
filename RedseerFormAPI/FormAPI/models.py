@@ -324,10 +324,14 @@ def notify_denial_by_email(sender, instance, **kwargs):
 
 
 @receiver(pre_save, sender=ReportVersion)
-def notify_approval_by_email(sender, instance,**kwargs):
+def notify_approval_by_email(sender, instance, **kwargs):
     try:
+        print(
+            f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: inside notify_approval_by_email fucntion, formid -', instance.id)
         previous = ReportVersion.objects.filter(id=instance.id)
-        if previous[0].approved_by_level + 1 == instance.approved_by_level:
+        if previous[0].approved_by_level + 1 == instance.approved_by_level and instance.is_submitted:
+            print(
+                f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Form {instance.id} has been approved, sending approval notification...')
             user_ref = db.collection(u'users')
             docs = user_ref.stream()
             user_list = []
@@ -338,19 +342,27 @@ def notify_approval_by_email(sender, instance,**kwargs):
                 assigned_rep = i.get('assigned_reports')
                 if assigned_rep:
                     for j in assigned_rep:
-                        if j.get('level') == str(instance.approved_by_level+1) and j.get('report_id') == instance.report_id:
+                        if str(j.get('level')) == str(instance.approved_by_level+1) and str(j.get('report_id')) == str(instance.report_id):
                             email_list.append(i.get('email'))
             if email_list:
-                msg = EmailMessage(
-                    'WebForm Available',
-                    f'Welcome Back , <br><br> New Webform【{instance.name}】is available for approval',
-                    settings.EMAIL_HOST_USER,
-                    email_list
-                )
-                msg.content_subtype = "html"
-                mail_status = msg.send()
+                try:
+                    msg = EmailMessage(
+                        'WebForm Available',
+                        f'Welcome Back , <br><br> New Webform【{instance.name}】is available for approval',
+                        settings.EMAIL_HOST_USER,
+                        email_list
+                    )
+                    msg.content_subtype = "html"
+                    mail_status = msg.send()
+                    if (mail_status == 1):
+                        print(
+                            f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Form {instance.id} approval notification sent to {email_list}')
+                except Exception as e:
+                    print(
+                        f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: Form {instance.id} approval notification error -', e)
             else:
-                print('no email present')
+                print(
+                    f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: Form {instance.id} approval notification issue - No email present!')
     except:
         pass
 
