@@ -8,11 +8,14 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
+from django.core.mail import EmailMessage
+from firebase_admin import firestore
 from ..api_views import ReportVersionCView
 # from threading import Semaphore
 
 
 db_settings = settings.DATABASES['default']
+db = firestore.client()
 
 
 class FormAutomation:
@@ -190,3 +193,77 @@ class FormAutomation:
                 f"Forms autoapprove success! - {len(formsOfThisMonth)} no of forms have been auto approved!")
         except Exception as e:
             print('Forms autoapprove mets error-', e)
+
+    def forms_delay_notifications(self):
+        todaysDateDay = int(datetime.now().day)
+        monthStartDate = datetime.now().replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        try:
+            db_session, db_conn = self.get_db_connection()
+            delayedFormsOfThisMonth = pd.read_sql(text(
+                f"SELECT id, name, report_id, approved_by_level, is_submitted, player.last_date_day FROM reportversion INNER JOIN player ON reportversion.company = player.player_name WHERE date_created >= '{monthStartDate}' and is_submitted = 0 and last_date_day < {todaysDateDay};"), db_conn)
+            print(
+                f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Form delayed report, {len(delayedFormsOfThisMonth)} no of forms have been auto delayed!')
+
+            user_ref = db.collection(u'users')
+            docs = user_ref.stream()
+            user_list = []
+            for doc in docs:
+                user_list.append(doc.to_dict())
+
+            levelWiseReportEmails = {}
+            for i in user_list:
+                assigned_rep = i.get('assigned_reports')
+                email = i.get('email')
+                if assigned_rep:
+                    for j in assigned_rep:
+                        report_id = str(j.get('report_id'))
+                        level = str(j.get('level'))
+                        if report_id in levelWiseReportEmails:
+                            if level in levelWiseReportEmails[report_id]:
+                                levelWiseReportEmails[report_id][level].append(
+                                    email)
+                            else:
+                                levelWiseReportEmails[report_id][level] = [
+                                ] + [email]
+                        else:
+                            levelWiseReportEmails[report_id] = {}
+                            levelWiseReportEmails[report_id][level] = [
+                            ] + [email]
+
+            for index, row in delayedFormsOfThisMonth.iterrows():
+                form_id = row['id']
+                formName = row['name']
+                delayedDays = todaysDateDay - row['last_date_day']
+                print(
+                    f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Form {form_id} has been delayed, sending delayed notification...')
+
+                email_list = []
+                report_id = str(row['report_id'])
+                delayed_level = str(int(row['approved_by_level']) + 1)
+                if report_id in levelWiseReportEmails and delayed_level in levelWiseReportEmails[report_id]:
+                    email_list = levelWiseReportEmails[report_id][delayed_level]
+                if email_list:
+                    try:
+                        msg = EmailMessage(
+                            'WebForm Delayed',
+                            f'Dear user, <br><br> Your Webform【{formName}】has been delayed for {delayedDays} day/days',
+                            settings.EMAIL_HOST_USER,
+                            email_list
+                        )
+                        msg.content_subtype = "html"
+                        mail_status = msg.send()
+                        if (mail_status == 1):
+                            print(
+                                f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Form {form_id} delayed notification sent to {email_list}')
+                    except Exception as e:
+                        print(
+                            f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: Form {form_id} delayed notification error -', e)
+                else:
+                    print(
+                        f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: Form {form_id} delayed notification issue - No email present!')
+
+        except Exception as e:
+            print(
+                f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: forms_delay_notifications mets error-', e)

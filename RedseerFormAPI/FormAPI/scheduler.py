@@ -28,6 +28,15 @@ def approve_froms_job():
     formAutomationObject.forms_auto_approve()
 
 
+delayedFormsJobId = str(uuid.uuid4())
+
+
+def delayed_forms_notify_job():
+    print(f"Forms delayed notify job started at, {TIME_ZONE}-",
+          datetime.now(), ", ", delayedFormsJobId)
+    formAutomationObject.forms_delay_notifications()
+
+
 testJobId = str(uuid.uuid4())
 
 
@@ -57,6 +66,16 @@ def start():
         trigger=CronTrigger(day=last_day_of_month, month='1-12',
                             hour=10, minute=30, timezone=pytz.utc),  # 16:00 IST
         id=approveFormsJobId
+    )
+
+    # To run job at 10:00 IST every day in UTC time, means 4:30 UTC time
+    scheduler.add_job(
+        delayed_forms_notify_job,
+        trigger="cron",
+        hour=4,
+        minute=30,
+        day="*",  # run every day
+        id=delayedFormsJobId
     )
 
     # for the testing purpose, every 10 second later
