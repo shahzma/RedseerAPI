@@ -143,13 +143,6 @@ class FormAutomation:
         todaysDate = datetime.now()
         monthStartDate = datetime.now().replace(
             day=1, hour=0, minute=0, second=0, microsecond=0)
-        # # Create a Semaphore with a maximum of 1 concurrent instance
-        # semaphore = Semaphore(value=1)
-        # # Acquire the semaphore before executing the database update
-        # semaphore.acquire()
-        ## your code here ##
-        # # Release the semaphore after the update is complete
-        # semaphore.release()
 
         # db = pymysql.connect(
         #     host=db_settings['HOST'],
