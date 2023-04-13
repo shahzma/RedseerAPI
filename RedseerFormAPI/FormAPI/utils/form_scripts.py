@@ -194,17 +194,96 @@ class FormAutomation:
         except Exception as e:
             print('Forms autoapprove mets error-', e)
 
-    def forms_delay_notifications(self):
+    def forms_delay1_notifications(self):
+        # This will get triggered on 3rd of every month
+        todaysDateDay = int(datetime.now().day)  # equals to 3 for now
+        next4DateDay = todaysDateDay + 4
+        monthStartDate = datetime.now().replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        try:
+            db_session, db_conn = self.get_db_connection()
+            # last_date_day > {next4DateDay} in below line is because, delay1 will only get sent
+            delayedFormsOfThisMonth = pd.read_sql(text(
+                f"SELECT id, name, report_id, approved_by_level, is_submitted, player.last_date_day FROM reportversion INNER JOIN player ON reportversion.company = player.player_name WHERE date_created >= '{monthStartDate}' and is_submitted = 0 and last_date_day > {next4DateDay};"), db_conn)
+            print(
+                f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Form delay1 report, {len(delayedFormsOfThisMonth)} no. of forms are getting delayed!')
+
+            user_ref = db.collection(u'users')
+            docs = user_ref.stream()
+            user_list = []
+            for doc in docs:
+                user_list.append(doc.to_dict())
+
+            levelWiseReportEmails = {}
+            for i in user_list:
+                assigned_rep = i.get('assigned_reports')
+                email = i.get('email')
+                if assigned_rep:
+                    for j in assigned_rep:
+                        report_id = str(j.get('report_id'))
+                        level = str(j.get('level'))
+                        if report_id in levelWiseReportEmails:
+                            if level in levelWiseReportEmails[report_id]:
+                                levelWiseReportEmails[report_id][level].append(
+                                    email)
+                            else:
+                                levelWiseReportEmails[report_id][level] = [
+                                ] + [email]
+                        else:
+                            levelWiseReportEmails[report_id] = {}
+                            levelWiseReportEmails[report_id][level] = [
+                            ] + [email]
+
+            for index, row in delayedFormsOfThisMonth.iterrows():
+                form_id = row['id']
+                formName = row['name']
+                last_date_day = row['last_date_day']
+                delayedDays = todaysDateDay - last_date_day
+                print(
+                    f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Form {form_id} has been delayed, sending delay1 notification...')
+
+                email_list = []
+                report_id = str(row['report_id'])
+                delayed_level = str(int(row['approved_by_level']) + 1)
+                if report_id in levelWiseReportEmails and delayed_level in levelWiseReportEmails[report_id]:
+                    email_list = levelWiseReportEmails[report_id][delayed_level]
+                if email_list:
+                    try:
+                        msg = EmailMessage(
+                            'WebForm is Pending',
+                            f'Dear user, <br><br> Your Webform【{formName}】is pending from 2 day, with approval deadline {last_date_day} of this month',
+                            settings.EMAIL_HOST_USER,
+                            email_list
+                        )
+                        msg.content_subtype = "html"
+                        mail_status = msg.send()
+                        if (mail_status == 1):
+                            print(
+                                f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Form {form_id} delay1 notification sent to {email_list}')
+                    except Exception as e:
+                        print(
+                            f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: Form {form_id} delay1 notification error -', e)
+                else:
+                    print(
+                        f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: Form {form_id} delay1 notification issue - No email present!')
+
+        except Exception as e:
+            print(
+                f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: forms_delay1_notifications mets error-', e)
+
+    def forms_delay2_notifications(self):
         todaysDateDay = int(datetime.now().day)
+        next4DateDay = todaysDateDay + 4
         monthStartDate = datetime.now().replace(
             day=1, hour=0, minute=0, second=0, microsecond=0)
 
         try:
             db_session, db_conn = self.get_db_connection()
             delayedFormsOfThisMonth = pd.read_sql(text(
-                f"SELECT id, name, report_id, approved_by_level, is_submitted, player.last_date_day FROM reportversion INNER JOIN player ON reportversion.company = player.player_name WHERE date_created >= '{monthStartDate}' and is_submitted = 0 and last_date_day < {todaysDateDay};"), db_conn)
+                f"SELECT id, name, report_id, approved_by_level, is_submitted, player.last_date_day FROM reportversion INNER JOIN player ON reportversion.company = player.player_name WHERE date_created >= '{monthStartDate}' and is_submitted = 0 and last_date_day = {next4DateDay};"), db_conn)
             print(
-                f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Form delayed report, {len(delayedFormsOfThisMonth)} no of forms have been auto delayed!')
+                f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Form delay2 report, {len(delayedFormsOfThisMonth)} no. of forms are getting delayed!')
 
             user_ref = db.collection(u'users')
             docs = user_ref.stream()
@@ -237,7 +316,7 @@ class FormAutomation:
                 formName = row['name']
                 delayedDays = todaysDateDay - row['last_date_day']
                 print(
-                    f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Form {form_id} has been delayed, sending delayed notification...')
+                    f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Form {form_id} has been delayed, sending delay2 notification...')
 
                 email_list = []
                 report_id = str(row['report_id'])
@@ -247,8 +326,8 @@ class FormAutomation:
                 if email_list:
                     try:
                         msg = EmailMessage(
-                            'WebForm Delayed',
-                            f'Dear user, <br><br> Your Webform【{formName}】has been delayed for {delayedDays} day/days',
+                            'WebForm Getting Delayed',
+                            f'Dear user, <br><br> Your Webform【{formName}】is getting delayed, and submission date is 4 days away, kindly fill your webform.',
                             settings.EMAIL_HOST_USER,
                             email_list
                         )
@@ -256,14 +335,14 @@ class FormAutomation:
                         mail_status = msg.send()
                         if (mail_status == 1):
                             print(
-                                f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Form {form_id} delayed notification sent to {email_list}')
+                                f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Form {form_id} delay2 notification sent to {email_list}')
                     except Exception as e:
                         print(
-                            f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: Form {form_id} delayed notification error -', e)
+                            f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: Form {form_id} delay2 notification error -', e)
                 else:
                     print(
-                        f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: Form {form_id} delayed notification issue - No email present!')
+                        f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: Form {form_id} delay2 notification issue - No email present!')
 
         except Exception as e:
             print(
-                f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: forms_delay_notifications mets error-', e)
+                f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: forms_delay2_notifications mets error-', e)

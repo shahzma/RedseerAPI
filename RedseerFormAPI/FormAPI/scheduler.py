@@ -28,13 +28,22 @@ def approve_froms_job():
     formAutomationObject.forms_auto_approve()
 
 
-delayedFormsJobId = str(uuid.uuid4())
+delay1FormsJobId = str(uuid.uuid4())
 
 
-def delayed_forms_notify_job():
-    print(f"Forms delayed notify job started at, {TIME_ZONE}-",
-          datetime.now(), ", ", delayedFormsJobId)
-    formAutomationObject.forms_delay_notifications()
+def forms_delay1_notify_job():
+    print(f"Forms delay1 notify job started at, {TIME_ZONE}-",
+          datetime.now(), ", ", delay1FormsJobId)
+    formAutomationObject.forms_delay1_notifications()
+
+
+delay2FormsJobId = str(uuid.uuid4())
+
+
+def forms_delay2_notify_job():
+    print(f"Forms delay2 notify job started at, {TIME_ZONE}-",
+          datetime.now(), ", ", delay2FormsJobId)
+    formAutomationObject.forms_delay2_notifications()
 
 
 testJobId = str(uuid.uuid4())
@@ -68,14 +77,24 @@ def start():
         id=approveFormsJobId
     )
 
+    # To run job at 10:00 IST on 3rd day of every month in UTC time, means 4:30 UTC time
+    scheduler.add_job(
+        forms_delay1_notify_job,
+        trigger="cron",
+        day=3,
+        hour=4,
+        minute=30,
+        id=delay1FormsJobId
+    )
+
     # To run job at 10:00 IST every day in UTC time, means 4:30 UTC time
     scheduler.add_job(
-        delayed_forms_notify_job,
+        forms_delay2_notify_job,
         trigger="cron",
         hour=4,
         minute=30,
         day="*",  # run every day
-        id=delayedFormsJobId
+        id=delay2FormsJobId
     )
 
     # for the testing purpose, every 10 second later
