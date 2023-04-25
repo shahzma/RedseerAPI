@@ -11,11 +11,12 @@ from rest_framework.test import APIRequestFactory
 from django.core.mail import EmailMessage
 from firebase_admin import firestore
 from ..api_views import ReportVersionCView
+import smtplib
 # from threading import Semaphore
 
 
 db_settings = settings.DATABASES['default']
-db = firestore.client()
+firebase_db = firestore.client()
 
 
 class FormAutomation:
@@ -37,7 +38,7 @@ class FormAutomation:
 
         return db_session, db_conn
 
-    def forms_release(self):
+    def forms_auto_release(self):
         db = pymysql.connect(
             host=db_settings['HOST'],
             port=int(db_settings['PORT']),
@@ -69,6 +70,12 @@ class FormAutomation:
                 industryWiseData[playersIndustry[i]
                                  ] = industryWiseData[playersIndustry[i]]+[i]
 
+        cur.execute("select id, name from report;")
+        industriesTuples = cur.fetchall()
+        cur.close()
+        industryNames = {}
+        for id, name in industriesTuples:
+            industryNames[id] = name
         # industryWiseDataExample = {45: [
         #     'Udaan_eFashion',
         #     'AJIO Business',
@@ -89,58 +96,145 @@ class FormAutomation:
         #     'Pharmeasy B2B',
         #     '1MG B2B'
         # ]}
+        all_email_list = []
+        user_ref = firebase_db.collection(u'users')
+        docs = user_ref.stream()
+        user_list = []
+        for doc in docs:
+            user_list.append(doc.to_dict())
+        for i in user_list:
+            all_email_list.append(i.get('email'))
 
-        print("Form will be created for -", industryWiseData)
+        print(
+            f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: new form will be created for -', industryWiseData)
         url = "/formresult/1/1/"
         factory = APIRequestFactory()
-        for i in industryWiseData:
-            for j in industryWiseData[i]:
-                lastReportVersionId += 1
-                created_at = datetime.today().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-                # payload = json.dumps({
-                #     "name": j+' Input',
-                #     "company": j,
-                #     "current_instance": {
-                #         "id": lastReportVersionId,
-                #         "created_at": created_at,
-                #     },
-                #     "id": i
-                # })
-                # headers = {
-                #     'Authorization': 'Token f810db83974e8cf8e1b0795bfdc5fcd90d8b3e6b',
-                #     'Content-Type': 'application/json'
-                # }
-                request_data = {
-                    "name": j+' Input',
-                    "company": j,
-                    "current_instance": {
-                        "id": lastReportVersionId,
-                        "created_at": created_at,
-                    },
-                    "id": i
-                }
-                try:
-                    request = factory.post(url, request_data, format='json')
-                    # response = requests.request(
-                    #     "POST", url, headers=headers, data=payload)
-                    view = ReportVersionCView.as_view()
-                    response = view(request)
-                    if response.status_code == 200:
-                        if 'text/html' in response.headers['content-type']:
-                            # if response.content_type == 'application/json':
-                            response.render()
-                            content = json.loads(response.content)
-                            print(
-                                f"Form Create success id={content['current_instance']['id']}, player={j}, created_at={content['current_instance']['created_at']}")
+        forms_table_data = []
+        sNo = 1
+        try:
+            for i in industryWiseData:
+                for j in industryWiseData[i]:
+                    lastReportVersionId += 1
+                    created_at = datetime.today().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+                    # payload = json.dumps({
+                    #     "name": j+' Input',
+                    #     "company": j,
+                    #     "current_instance": {
+                    #         "id": lastReportVersionId,
+                    #         "created_at": created_at,
+                    #     },
+                    #     "id": i
+                    # })
+                    # headers = {
+                    #     'Authorization': 'Token f810db83974e8cf8e1b0795bfdc5fcd90d8b3e6b',
+                    #     'Content-Type': 'application/json'
+                    # }
+                    request_data = {
+                        "name": j+' Input',
+                        "company": j,
+                        "current_instance": {
+                            "id": lastReportVersionId,
+                            "created_at": created_at,
+                        },
+                        "id": i
+                    }
+                    try:
+                        request = factory.post(
+                            url, request_data, format='json')
+                        # response = requests.request(
+                        #     "POST", url, headers=headers, data=payload)
+                        view = ReportVersionCView.as_view()
+                        response = view(request)
+                        if response.status_code == 200:
+                            forms_table_data.append(
+                                {"sNo": sNo, "webformName": j+' Input', "playerName": j, "industryName": industryNames[i]})
+                            sNo = sNo+1
+                            if 'text/html' in response.headers['content-type']:
+                                # if response.content_type == 'application/json':
+                                response.render()
+                                content = json.loads(response.content)
+                                print(
+                                    f"{datetime.now().strftime('[%d/%b/%Y %H:%M:%S]')} Log: Form Create success id={content['current_instance']['id']}, player={j}, created_at={content['current_instance']['created_at']}")
+                            else:
+                                print(
+                                    f"{datetime.now().strftime('[%d/%b/%Y %H:%M:%S]')} Log: Form Create success id={content['current_instance']['id']}, player={j}, created_at={content['current_instance']['created_at']}, some error might be expected")
                         else:
                             print(
-                                f"Form Create success id={content['current_instance']['id']}, player={j}, created_at={content['current_instance']['created_at']}, some error might be expected")
+                                f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: Form Create error, player={j} and report_id={i}')
+                    except Exception as e:
+                        print(
+                            f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: Form auto release error, player={j} and report_id={i}', e)
+        except:
+            print(
+                f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: Form auto release error -', e)
+        finally:
+            if all_email_list and forms_table_data:
+                print(
+                    f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Form auto release script has been completed. Sending emails to relevant teams')
+                try:
+                    shared_style = "border: 1px solid #dddddd; text-align: left; padding: 8px;"
+                    table_style = "font-family: arial, sans-serif;"
+                    table_headings = """
+                        <tr>
+                            <td style="{}">S.No.</td>
+                            <td style="{}">Webform Name</td>
+                            <td style="{}">Player Name</td>
+                            <td style="{}">Industry Name</td>
+                        </tr>
+                    """.format(
+                        shared_style,
+                        shared_style,
+                        shared_style,
+                        shared_style,
+                    )
+
+                    table_rows = ""
+                    for data in forms_table_data:
+                        table_rows += """
+                            <tr>
+                                <td style="{}">{}</td>
+                                <td style="{}">{}</td>
+                                <td style="{}">{}</td>
+                                <td style="{}">{}</td>
+                            </tr>
+                        """.format(
+                            shared_style, data["sNo"],
+                            shared_style, data["webformName"],
+                            shared_style, data["playerName"],
+                            shared_style, data["industryName"],
+                        )
+
+                    html_content = """
+                        <h2 style="{}">Webform for this month have been released</h2>
+                        <p>
+                            Please fill out your assigned webform as soon as possible. Your webform
+                            will be auto-saved even if you can't submit it. Remember,
+                            <i>"Do what you can, with what you have, where you are."</i>
+                        </p>
+                        <table style="{} border-collapse: collapse; width: 100%;">
+                            {}
+                            {}
+                        </table>
+                    """.format(table_style, table_style, table_headings, table_rows)
+
+                    msg = EmailMessage(
+                        'New WebForms Released',
+                        html_content,
+                        settings.EMAIL_HOST_USER,
+                        all_email_list
+                    )
+                    msg.content_subtype = "html"
+
+                    mail_status2 = msg.send()
+                    if (mail_status2 == 1):
+                        print(
+                            f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Form forms_auto_release completed. Notification successfully sent to {all_email_list}')
                     else:
                         print(
-                            f"Form Create error, player={j} and report_id={i}")
+                            f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Form forms_auto_release completed, but it seems email notification failed')
                 except Exception as e:
                     print(
-                        f"Form Create error, player={j} and report_id={i}", e)
+                        f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: Forms forms_auto_release mets error-', e)
 
     def forms_auto_approve(self):
         todaysDate = datetime.now()
@@ -209,7 +303,7 @@ class FormAutomation:
             print(
                 f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Form delay1 report, {len(delayedFormsOfThisMonth)} no. of forms are getting delayed!')
 
-            user_ref = db.collection(u'users')
+            user_ref = firebase_db.collection(u'users')
             docs = user_ref.stream()
             user_list = []
             for doc in docs:
@@ -285,7 +379,7 @@ class FormAutomation:
             print(
                 f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Form delay2 report, {len(delayedFormsOfThisMonth)} no. of forms are getting delayed!')
 
-            user_ref = db.collection(u'users')
+            user_ref = firebase_db.collection(u'users')
             docs = user_ref.stream()
             user_list = []
             for doc in docs:

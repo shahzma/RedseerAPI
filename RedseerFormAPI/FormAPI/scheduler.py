@@ -16,7 +16,7 @@ formAutomationObject = FormAutomation()
 def forms_release_job():
     print(f"Forms release job executed at, {TIME_ZONE}-",
           datetime.now(), ", ", createFormsJobId)
-    formAutomationObject.forms_release()
+    formAutomationObject.forms_auto_release()
 
 
 approveFormsJobId = str(uuid.uuid4())
