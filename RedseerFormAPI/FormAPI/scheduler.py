@@ -9,8 +9,18 @@ import pytz
 import calendar
 from FormAPI.utils.form_scripts import FormAutomation
 
-createFormsJobId = str(uuid.uuid4())
 formAutomationObject = FormAutomation()
+
+preReleaseFormsJobId = str(uuid.uuid4())
+
+
+def pre_release_forms_job():
+    print(f"Forms pre-release job executed at, {TIME_ZONE}-",
+          datetime.now(), ", ", preReleaseFormsJobId)
+    formAutomationObject.forms_pre_release_notify()
+
+
+createFormsJobId = str(uuid.uuid4())
 
 
 def forms_release_job():
@@ -67,9 +77,17 @@ def start():
         id=createFormsJobId
     )
 
-    # To run job at 16:00 IST of last day of every month in UTC time, means 10:30 UTC time
+    # To run job at 10:00 IST of 2nd last day of every month in UTC time, means 4:30 UTC time
     last_day_of_month = calendar.monthrange(
         datetime.now().year, datetime.now().month)[1]
+    scheduler.add_job(
+        pre_release_forms_job,
+        trigger=CronTrigger(day=last_day_of_month-1, month='1-12',
+                            hour=4, minute=30, timezone=pytz.utc),  # 16:00 IST
+        id=preReleaseFormsJobId
+    )
+
+    # To run job at 16:00 IST of last day of every month in UTC time, means 10:30 UTC time
     scheduler.add_job(
         approve_froms_job,
         trigger=CronTrigger(day=last_day_of_month, month='1-12',

@@ -38,6 +38,108 @@ class FormAutomation:
 
         return db_session, db_conn
 
+    def forms_pre_release_notify(self):
+        db = pymysql.connect(
+            host=db_settings['HOST'],
+            port=int(db_settings['PORT']),
+            user=db_settings['USER'],
+            password=db_settings['PASSWORD'],
+            db=db_settings['NAME'],
+            ssl={'ssl': {'tls': True}}
+        )
+        db_cur = db.cursor()
+
+        db_cur.execute("select player_name, report.id, report.name from((industry INNER JOIN report ON industry.industry_name = report.name) INNER JOIN player ON industry.industry_id = player.industry_id and player.is_active = 1);")
+        playersTuples = db_cur.fetchall()
+        db_cur.close()
+
+        forms_table_data = []
+        sNo = 1
+        for player_name, id, name in playersTuples:
+            forms_table_data.append(
+                {"sNo": sNo, "webformName": player_name+' Input', "playerName": player_name, "industryName": name})
+            sNo = sNo+1
+
+        admin_email_list = []
+        user_ref = firebase_db.collection(u'users')
+        docs = user_ref.stream()
+        user_list = []
+        for doc in docs:
+            user_list.append(doc.to_dict())
+        for i in user_list:
+            if (i.get('is_admin')):
+                admin_email_list.append(i.get('email'))
+
+        try:
+            if admin_email_list and forms_table_data:
+                print(
+                    f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Fors pre release notify script triggered. Sending emails to admin teams')
+                try:
+                    shared_style = "border: 1px solid #dddddd; text-align: left; padding: 8px;"
+                    table_style = "font-family: arial, sans-serif;"
+                    table_headings = """
+                        <tr>
+                            <td style="{}">S.No.</td>
+                            <td style="{}">Webform Name</td>
+                            <td style="{}">Player Name</td>
+                            <td style="{}">Industry Name</td>
+                        </tr>
+                    """.format(
+                        shared_style,
+                        shared_style,
+                        shared_style,
+                        shared_style,
+                    )
+
+                    table_rows = ""
+                    for data in forms_table_data:
+                        table_rows += """
+                            <tr>
+                                <td style="{}">{}</td>
+                                <td style="{}">{}</td>
+                                <td style="{}">{}</td>
+                                <td style="{}">{}</td>
+                            </tr>
+                        """.format(
+                            shared_style, data["sNo"],
+                            shared_style, data["webformName"],
+                            shared_style, data["playerName"],
+                            shared_style, data["industryName"],
+                        )
+
+                    html_content = """
+                        <h2 style="{}">Preview of Next Month's Webform Release: See What's in List!</h2>
+                        <p>
+                            Please find the list of webforms that are scheduled to be released on the 1st of next month. Kindly review the list and bring to the attention of the Development Team for any missing or extra webforms.
+                        </p>
+                        <table style="{} border-collapse: collapse; width: 100%;">
+                            {}
+                            {}
+                        </table>
+                    """.format(table_style, table_style, table_headings, table_rows)
+
+                    msg = EmailMessage(
+                        'WebForms Pre-Release Review Notification',
+                        html_content,
+                        settings.EMAIL_HOST_USER,
+                        admin_email_list
+                    )
+                    msg.content_subtype = "html"
+
+                    mail_status = msg.send()
+                    if (mail_status == 1):
+                        print(
+                            f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Form forms_pre_release_notify script completed. Notification successfully sent to {admin_email_list}')
+                    else:
+                        print(
+                            f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Form forms_pre_release_notify script completed, but it seems email notification failed')
+                except Exception as e:
+                    print(
+                        f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: Forms forms_pre_release_notify script mets error-', e)
+        except:
+            print(
+                f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: Forms forms_pre_release_notify error -', e)
+
     def forms_auto_release(self):
         db = pymysql.connect(
             host=db_settings['HOST'],
