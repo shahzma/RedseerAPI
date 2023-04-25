@@ -108,9 +108,9 @@ class FormAutomation:
                         )
 
                     html_content = """
-                        <h2 style="{}">Preview of Next Month's Webform Release: See What's in List!</h2>
+                        <h2 style="{}">Preview of Next Month's Webforms Release: See What's in List!</h2>
                         <p>
-                            Please find the list of webforms that are scheduled to be released on the 1st of next month. Kindly review the list and bring to the attention of the Development Team for any missing or extra webforms.
+                            Here is a list of webforms scheduled to be released on the 1st of next month. Kindly review the list and bring to the attention of the Development Team if there are any missing or extra webforms.
                         </p>
                         <table style="{} border-collapse: collapse; width: 100%;">
                             {}
@@ -307,11 +307,10 @@ class FormAutomation:
                         )
 
                     html_content = """
-                        <h2 style="{}">Webform for this month have been released</h2>
+                        <h2 style="{}">Webforms for this month have been released</h2>
                         <p>
-                            Please fill out your assigned webform as soon as possible. Your webform
-                            will be auto-saved even if you can't submit it. Remember,
-                            <i>"Do what you can, with what you have, where you are."</i>
+                            Kindly fill out your assigned webforms as soon as possible. <br/>Your webform
+                            will be auto-saved even if you can't submit it.
                         </p>
                         <table style="{} border-collapse: collapse; width: 100%;">
                             {}
