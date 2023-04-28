@@ -304,7 +304,7 @@ def notify_denial_by_email(sender, instance, **kwargs):
                 try:
                     msg = EmailMessage(
                         'WebForm Denied',
-                        f'Welcome Back , <br><br> Your Webform【{previous[0].name}】was denied',
+                        f'Welcome Back , <br><br> Your Webform <b><i>{previous[0].name}</i></b> was denied',
                         settings.EMAIL_HOST_USER,
                         [previous[0].email]
                     )
@@ -348,7 +348,7 @@ def notify_approval_by_email(sender, instance, **kwargs):
                 try:
                     msg = EmailMessage(
                         'WebForm Available',
-                        f'Welcome Back , <br><br> New Webform【{instance.name}】is available for approval',
+                        f'Welcome Back , <br><br> New Webform <b><i>{instance.name}</i></b> is available for approval',
                         settings.EMAIL_HOST_USER,
                         email_list
                     )

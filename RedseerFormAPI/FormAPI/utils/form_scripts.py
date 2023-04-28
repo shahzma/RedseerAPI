@@ -447,7 +447,7 @@ class FormAutomation:
                     try:
                         msg = EmailMessage(
                             'WebForm is Pending',
-                            f'Dear user, <br><br> Your Webform【{formName}】is pending from 2 day, with approval deadline {last_date_day} of this month',
+                            f'Dear user,<br><br>Your webform <b><i>{formName}</i></b> has been pending for 2 days, and the final approval deadline is on the {last_date_day} of this month. We kindly request that you fill it out as soon as possible to ensure a smoother process.',
                             settings.EMAIL_HOST_USER,
                             email_list
                         )
@@ -522,7 +522,7 @@ class FormAutomation:
                     try:
                         msg = EmailMessage(
                             'WebForm Getting Delayed',
-                            f'Dear user, <br><br> Your Webform【{formName}】is getting delayed, and submission date is 4 days away, kindly fill your webform.',
+                            f'Dear user,<br><br>This is to inform you that your webform <b><i>{formName}</i></b> is getting delayed due to incomplete information from your end. As the deadline for final approval is in 4 days, you are requested to fill the same at the earliest to avoid further delay.',
                             settings.EMAIL_HOST_USER,
                             email_list
                         )
