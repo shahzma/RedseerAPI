@@ -30,9 +30,8 @@ cred = credentials.Certificate(os.path.join(
     settings.BASE_DIR, './coeus-8be26-firebase-adminsdk-panol-ec5a6f11fd.json'))
 firebase_admin.initialize_app(cred)
 db = firestore.client()
-load_dotenv()
 
-#ignore it
+# ignore it
 # class FormapiParameter(models.Model):#old model, not in use
 #     parameter_id = models.AutoField(primary_key=True)
 #     parameter_name = models.CharField(max_length=80, blank=True, null=True)
@@ -43,45 +42,35 @@ load_dotenv()
 #         managed = False
 #         db_table = 'formapi_parameter'
 
+
 class Sector(models.Model):
     sector_id = models.AutoField(primary_key=True, auto_created=True)
     sector_name = models.CharField(max_length=45)
+
     class Meta:
         managed = False
         db_table = "sector"
 
-    def __str__(self): #'sector_name' is being used as attribute to identify Report objects 
+    def __str__(self):  # 'sector_name' is being used as attribute to identify Sector objects
         return self.sector_name
-    
+
+
 class Industry(models.Model):
     industry_id = models.AutoField(primary_key=True, auto_created=True)
     industry_name = models.CharField(max_length=45)
-    sector = models.ForeignKey(Sector, models.DO_NOTHING, blank=True, null=True)
+    sector = models.ForeignKey(
+        Sector, models.DO_NOTHING, blank=True, null=True)
     order = models.IntegerField(default=0)
     sector_name = models.CharField(max_length=45)
+
     class Meta:
         managed = False
         db_table = "industry"
-    
-    def __str__(self): #'industry_name' is being used as attribute to identify Report objects 
+
+    def __str__(self):  # 'industry_name' is being used as attribute to identify Industry objects
         return self.industry_name
 
 # previously called company
-class Player(models.Model):
-    player_id = models.AutoField(primary_key=True, auto_created=True)
-    player_name = models.CharField(max_length=45)
-    industry = models.ForeignKey(Industry, models.DO_NOTHING, blank=True, null=True) #is called industry
-    excel_link = models.CharField(max_length=2000)
-    last_date_day = models.IntegerField(default=28, blank=True, null=True)
-    is_active = models.BooleanField(default=True)
-
-    class Meta:
-        managed = False
-        db_table = "player"
-    
-    def __str__(self): #'player_name' is being used as attribute to identify Report objects 
-        return self.player_name
-
 
 class Parameter(models.Model):
     parameter_id = models.AutoField(primary_key=True)
@@ -92,9 +81,9 @@ class Parameter(models.Model):
     class Meta:
         managed = False
         db_table = 'parameter'
-    
-    def __str__(self): #'parameter_name' is being used as attribute to identify Report objects 
-        return self.parameter_name  or '----- ERROR: NULL VALUE FOUND ----'
+
+    def __str__(self):  # 'parameter_name' is being used as attribute to identify Parameter objects
+        return self.parameter_name or '----- ERROR: NULL VALUE FOUND ----'
 
 
 # mainquestion. unit = currency. aggregate = summate
@@ -103,12 +92,12 @@ class ParameterTree(models.Model):
     question = models.CharField(max_length=255)
     # unit = models.CharField(max_length=25)
     parameters = models.ManyToManyField(Parameter)
-    summate = models.BooleanField(default = True)
+    summate = models.BooleanField(default=True)
 
     class Meta:
         managed = False
 
-    def __str__(self): #'question' is being used as attribute to identify Report objects 
+    def __str__(self):  # 'question' is being used as attribute to identify ParameterTree objects
         return self.question or '----- ERROR: NULL VALUE FOUND ----'
 
 
@@ -117,25 +106,45 @@ class Report(models.Model):
     id = models.AutoField(primary_key=True, auto_created=True)
     name = models.CharField(max_length=100)
     industry = models.ForeignKey(
-        Industry, on_delete=models.PROTECT)
+        Industry, on_delete=models.PROTECT, null=True, blank=True)
     frequency = models.TextField(
         choices=[("1", "Weekly"), ("2", "Monthly"), ("3", "Quarterly")])
     cutoff = models.IntegerField(default=15)  # change default to 30
-    question_count = models.IntegerField(default=24)
-    companies = models.ManyToManyField(Player)
+    question_count = models.IntegerField( default=24)
     question = models.ManyToManyField(ParameterTree)
     max_level_needed = models.IntegerField(default=3)
     form_relase_date = models.IntegerField(default=1, validators=[MaxValueValidator(31),
-                                                                   MinValueValidator(1)])
+                                                                  MinValueValidator(1)])
     form_active_days = models.IntegerField(default=15, validators=[MaxValueValidator(100),
                                                                    MinValueValidator(1)])
 
     class Meta:
         managed = False
         db_table = "report"
-    
+
     def __str__(self): #'name' is being used as attribute to identify Report objects 
         return self.name
+    
+class Player(models.Model):
+    player_id = models.AutoField(primary_key=True, auto_created=True)
+    player_name = models.CharField(max_length=45)
+    report = models.ForeignKey(
+        Report, models.DO_NOTHING, blank=True, null=True)
+    industry = models.ForeignKey(
+        Industry, models.DO_NOTHING, blank=True, null=True)  # is called industry
+    excel_link = models.CharField(max_length=2000)
+    last_date_day = models.IntegerField(default=28, blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        managed = False
+        db_table = "player"
+
+    def __str__(self):  # 'player_name' is being used as attribute to identify Player objects
+        return self.player_name
+
+
+
 #
 #
 # # main model
@@ -153,6 +162,8 @@ class Report(models.Model):
 # # answer =  last value in subquestion fioeld submitted wrt last month
 # # current_value = value if any submitted in subquestion model
 # # filled-count = no of subquestions with answers
+
+
 class ReportVersion(models.Model):
     id = models.AutoField(primary_key=True, auto_created=True)
     name = models.CharField(max_length=100)
@@ -239,8 +250,9 @@ class AuditTable(models.Model):
     user = models.CharField(max_length=1000, default=None)  #email
     user_level = models.IntegerField(default=1)
     date = models.DateTimeField(auto_now_add=True, blank=True)
-    action = models.BooleanField(default=False)
-    form_id = models.ForeignKey(ReportVersion, on_delete=models.PROTECT, default=1)
+    action = models.IntegerField(default=0)
+    form_id = models.ForeignKey(
+        ReportVersion, on_delete=models.PROTECT, default=1)
 
     class Meta:
         managed = True
@@ -275,16 +287,19 @@ class ReportQuestion(models.Model):
         managed = False
         db_table = 'report_question'
 
-class ReportCompanies(models.Model):
+
+class ReportCompanies(models.Model):  # This seems to of no use
     id = models.AutoField(primary_key=True, auto_created=True)
-    report = models.ForeignKey(Report, on_delete=models.PROTECT, blank=True, null=True)
-    player = models.ForeignKey(Player, on_delete=models.PROTECT, blank=True, null=True) #is called industry
+    report = models.ForeignKey(
+        Report, on_delete=models.PROTECT, blank=True, null=True)
+    player = models.ForeignKey(
+        Player, on_delete=models.PROTECT, blank=True, null=True)
 
     class Meta:
         managed = False
         db_table = "report_companies"
-    
-    def __str__(self):  # 'player_name' is being used as attribute to identify Report objects
+
+    def __str__(self):  # 'player_name' is being used as attribute to identify ReportCompanies objects
         return self.report.name + " - " + self.player.player_name
 
 

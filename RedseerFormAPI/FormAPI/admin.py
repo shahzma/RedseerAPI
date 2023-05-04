@@ -17,10 +17,10 @@ class IndustryAdmin(admin.ModelAdmin):
 
 
 class PlayerAdmin(admin.ModelAdmin):
-    list_display = ('player_id', 'player_name', 'industry',
+    list_display = ('player_id', 'player_name', 'report', 'industry',
                     'last_date_day', 'is_active')
     ordering = ('player_id',)
-    search_fields = ['player_id', 'player_name',
+    search_fields = ['player_id', 'player_name','report__name',
                      'industry__industry_name', 'last_date_day']
 
 
@@ -40,7 +40,7 @@ class ReportAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'industry', 'max_level_needed',
                     'form_relase_date', 'form_active_days')
     ordering = ('id',)
-    search_fields = ['id', 'name', 'industry__industry_id']
+    search_fields = ['id', 'name', 'industry__industry_id','industry__industry_name']
 
 
 class ReportVersionAdmin(admin.ModelAdmin):

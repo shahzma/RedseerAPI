@@ -47,7 +47,6 @@ class ParameterTreeSerializer(serializers.ModelSerializer):
 
 class ReportSerializer(serializers.ModelSerializer):
     # parameters = ParameterTreeSerializer(many=True, read_only=True)
-    companies = PlayerSerializer(many=True, read_only=True)
     questions = ParameterTreeSerializer(source='question', many=True, read_only=True)
     deadline_days = serializers.IntegerField(source='cutoff')
     schedule = serializers.CharField(source='frequency')
@@ -59,8 +58,12 @@ class ReportSerializer(serializers.ModelSerializer):
         rep['schedule'] = schedule_val
         rep['question_count'] = len(rep['questions'])
         # print(rep['companies'][0])
-        rep['company'] = [d['player_name'] for d in rep['companies'] if 'player_name' in d]
-        rep.pop('companies')
+        # rep['company'] = [d['player_name'] for d in rep['companies'] if 'player_name' in d]
+        # rep.pop('companies')
+        rep['company'] = []
+        report_companies = Player.objects.filter(report_id=rep['id'])
+        for company in report_companies:
+            rep['company'].append(company.player_name)
         # rep['filled_count'] = Report.objects.count()
         rep['filled_count'] = 1
         rep['last_modified_date'] = datetime.date.today()
@@ -73,26 +76,24 @@ class ReportSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Report
-        fields = ['id', 'name', 'companies', 'schedule', 'questions', 'deadline_days']
+        fields = ['id', 'name', 'schedule', 'questions', 'deadline_days']
         read_only_fields = ['id']
 
 #Listing the sector and their player
 class SectorPlayerListSerializer(serializers.ModelSerializer):
-    companies = PlayerSerializer(many=True, read_only=True)
     def to_representation(self, instance):
         rep = super().to_representation(instance)
         rep['company'] = []
-        for d in rep['companies']:
-            if 'player_name' in d and 'player_id' in d:
-                playerobject = {}
-                playerobject['name'] = d['player_name']
-                playerobject['id'] = d['player_id']
-                rep['company'].append(playerobject)
-        rep.pop('companies')
+        report_companies = Player.objects.filter(report_id=rep['id'])
+        for company in report_companies:
+            playerobject = {}
+            playerobject['name'] = company.player_name
+            playerobject['id'] = company.player_id
+            rep['company'].append(playerobject)
         return rep
     class Meta:
         model = Report
-        fields = ['id', 'name', 'companies']
+        fields = ['id', 'name']
         read_only_fields = ['id']
 
 class ReportResultSerializer(serializers.ModelSerializer):
