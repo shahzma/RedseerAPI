@@ -2,13 +2,10 @@ import pandas as pd
 import os
 import pymysql
 import calendar
-import pymysql
-import decimal
 import requests
 import datetime
 from datetime import datetime
 from datetime import date
-import calendar
 import msal
 from django.conf import settings
 import sys
@@ -37,7 +34,7 @@ class CalculatedParamFoodtechFn:
                     ans[i]
                     input_dict[id_name_dict[i]] = ans[i]
                 except:
-                    input_dict[id_name_dict[i]] = decimal.Decimal(0)
+                    input_dict[id_name_dict[i]] = None
             print("Foodtech:- par_val_dict finished")
             return input_dict
         except Exception as e:
@@ -53,49 +50,25 @@ class CalculatedParamFoodtechFn:
         except Exception as e:
             print("Foodtech:- Error in month_range:- ", e)
 
-    def InsertORUpdate(self, dff, db):
+    def InsertORUpdate(self, data, db):
         try:
-            data_dict = dff.to_dict(orient='records')
             cur = db.cursor()
-            for i in data_dict:
-                comp_id = i['player_id']
-                s_d = i['start_date']
-                e_d = i['end_date']
-                par_id = i['parameter_id']
-                val = i['value']
-                dc = i['date_created']
-                s = i['source']
-                ptree = i['parametertree_id']
-                a = "SELECT * from main_data WHERE player_id= '" + str(comp_id
-                                                                       ) + "' AND start_date= '" + str(s_d
-                                                                                                       ) + "'" + " AND end_date='" + str(e_d
-                                                                                                                                         ) + "'" + ' AND parameter_id=' + '"' + str(par_id) + '";'
-                row_exist = cur.execute(a)
-                if row_exist == 0:
-                    b = (
-                        "insert into main_data(player_id,start_date,end_date,parameter_id,value,date_created,source,parametertree_id) values('"
-                        + str(comp_id) + "','" + str(s_d) + "', '" + str(e_d) +
-                        "','" + str(par_id) + "','" + str(val) + "', '" + str(dc) +
-                        "','" + s + "','" + str(ptree) + "')")
-                    print(b)
-                    cur.execute(b)
-                    db.commit()
-                else:
-                    b = "Update main_data set value='" + str(val
-                                                             ) + "' where player_id= '" + str(comp_id
-                                                                                              ) + "' AND start_date= '" + str(s_d
-                                                                                                                              ) + "'" + " AND end_date='" + str(e_d
-                                                                                                                                                                ) + "'" + ' AND parameter_id=' + '"' + str(par_id) + '";'
-                    print(b)
-                    cur.execute(b)
-                    db.commit()
+            query = """
+            INSERT INTO main_data (
+                player_id, start_date, end_date, parameter_id, value, date_created, source, parametertree_id, report_version_id
+            ) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) as value_list
+            ON DUPLICATE KEY UPDATE value = value_list.value, date_created = value_list.date_created, report_version_id = value_list.report_version_id
+            """
+            cur.executemany(query, data)
+            db.commit()
             print("Foodtech:- InsertORUpdate finished")
         except Exception as e:
             print("Foodtech:- Error in InsertORUpdate:- ", e)
 
     def reset_calc_dict(self, id_name_dict):
         try:
-            in_values = [decimal.Decimal(0)] * len(id_name_dict)
+            in_values = [None] * len(id_name_dict)
             calc_dict = dict(zip(list(id_name_dict.values()), in_values))
             print("Foodtech:- reset_calc_dict finished")
             return calc_dict
@@ -106,7 +79,6 @@ class CalculatedParamFoodtechFn:
         try:
             CLIENT_ID = 'fc1cef01-9962-458e-a314-4e31a3d10791'
             TENANT_ID = '00a9ff8c-9830-4847-ae51-4579ec092cb4'
-            CLIENT_SECRET = '3c27dc10-61ce-4d9b-baa7-b4c7f94aa346'
             AUTHORITY_URL = (
                 'https://login.microsoftonline.com/00a9ff8c-9830-4847-ae51-4579ec092cb4'
             )
@@ -135,7 +107,6 @@ class CalculatedParamFoodtechFn:
     def get_WA_sheet(self):
         try:
             file_name2 = 'Weighted Average Parameters - Benchmarks Sectors.xlsx'
-            print(file_name2)
             conflict_resolve = {'item': {'@microsoft.graph.conflictBehavior':
                                          'replace'}}
             yls2 = self.upload_resumable2(file_name2)
@@ -146,12 +117,12 @@ class CalculatedParamFoodtechFn:
         except Exception as e:
             print("Foodtech:- Error in get_WA_sheet:- ", e)
 
-    def calc1(self, pl, sd, ed, db):
+    def calc1(self, pl, sd, ed, db, rep_ver_id):
         try:
             cur = db.cursor()
             parameters_dict = {(417): 848, (1729): 849, (420): 850, (421): 851, (
                 422): 852}
-            required_df = []
+            required_rows = []
             AOV = "SELECT value from main_data WHERE player_id= '" + str(pl
                                                                          ) + "' AND start_date= '" + str(sd) + "'" + " AND end_date='" + str(ed
                                                                                                                                              ) + "'" + 'AND parameter_id=336'
@@ -166,35 +137,30 @@ class CalculatedParamFoodtechFn:
             for key, value in parameters_dict.items():
                 par_in = key
                 par_out = value
-                rev = "SELECT value from main_data WHERE player_id= '" + str(pl
-                                                                             ) + "' AND start_date= '" + str(sd
-                                                                                                             ) + "'" + " AND end_date='" + str(ed
-                                                                                                                                               ) + "'" + "AND parameter_id='" + str(par_in) + "';"
+                rev = "SELECT value from main_data WHERE player_id= '" + str(pl) + "' AND start_date= '" + str(sd) + "'" + " AND end_date='" + str(ed
+                                                                                                                                                   ) + "'" + "AND parameter_id='" + str(par_in) + "';"
                 cur.execute(rev)
                 to = cur.fetchall()
                 to = pd.DataFrame.from_dict(to)
                 if len(to) == 0:
                     continue
-                print(pl)
                 rev1 = to.iat[0, 0]
                 val = MOV * rev1 / 10000
-                print(val)
-                required_df.append({'player_id': pl, 'start_date': sd, 'end_date':
-                                    ed, 'parameter_id': par_out, 'value': val, 'date_created': date
-                                    .today(), 'source': 'Benchmarks', 'parametertree_id': 52})
+                data_dict = {'player_id': pl, 'start_date': sd, 'end_date':
+                             ed, 'parameter_id': par_out, 'value': val, 'date_created': str(date
+                                                                                            .today()), 'source': 'Benchmarks', 'parametertree_id': 52, 'report_version_id': rep_ver_id}
+                required_rows.append(tuple(data_dict.values()))
             cur.close()
-            df = pd.DataFrame(required_df)
-            print(df)
-            self.InsertORUpdate(df, db)
+            self.InsertORUpdate(required_rows, db)
             print("Foodtech:- calc1 finished")
         except Exception as e:
             print("Foodtech:- Error in calc1:- ", e)
 
-    def calc2(self, pl, sd, ed, db):
+    def calc2(self, pl, sd, ed, db, rep_ver_id):
         try:
             cur = db.cursor()
             parameters_dict = {(1727): 854, (1730): 855}
-            required_df = []
+            required_rows = []
             AOV = "SELECT value from main_data WHERE player_id= '" + str(pl
                                                                          ) + "' AND start_date= '" + str(sd) + "'" + " AND end_date='" + str(ed
                                                                                                                                              ) + "'" + 'AND parameter_id=1720'
@@ -216,15 +182,11 @@ class CalculatedParamFoodtechFn:
                 if len(to) != 0:
                     rev1 = to.iat[0, 0]
                     val = rev1 / aov * 100
-                    print(val)
-                    required_df.append({'player_id': pl, 'start_date': sd,
-                                        'end_date': ed, 'parameter_id': par_out, 'value': val,
-                                        'date_created': date.today(), 'source': 'Benchmarks',
-                                        'parametertree_id': 52})
+                    data_dict = {'player_id': pl, 'start_date': sd, 'end_date': ed, 'parameter_id': par_out, 'value': val,
+                                 'date_created': date.today(), 'source': 'Benchmarks', 'parametertree_id': 52, 'report_version_id': rep_ver_id}
+                    required_rows.append(tuple(data_dict.values()))
             cur.close()
-            df = pd.DataFrame(required_df)
-            print(df)
-            self.InsertORUpdate(df, db)
+            self.InsertORUpdate(required_rows, db)
             print("Foodtech:- calc2 finished")
         except Exception as e:
             print("Foodtech:- Error in calc2:- ", e)
@@ -247,9 +209,9 @@ class CalculatedParamFoodtechFn:
         except Exception as e:
             print("Foodtech:- Error in calc3:- ", e)
 
-    def WA_Calc(self, player_id, df, sd, ed, db):
+    def WA_Calc(self, player_id, df, sd, ed, db, rep_ver_id):
         try:
-            required_df = []
+            required_rows = []
             dt = pd.Timestamp.today().date()
             dt = str(dt)
             cur = db.cursor()
@@ -290,55 +252,74 @@ class CalculatedParamFoodtechFn:
                     val = par_1 * par_2
                     val = val / 100
                 if val != 0:
-                    required_df.append({'player_id': player_id, 'start_date': sd,
-                                        'end_date': ed, 'parameter_id': par_id, 'value': val,
-                                        'date_created': dt, 'source': 'Benchmarks',
-                                        'parametertree_id': 52})
-            dff = pd.DataFrame(required_df)
-            print(' WA Df \n')
+                    data_dict = {'player_id': player_id, 'start_date': sd,
+                                 'end_date': ed, 'parameter_id': par_id, 'value': val,
+                                 'date_created': dt, 'source': 'Benchmarks',
+                                 'parametertree_id': 52, 'report_version_id': rep_ver_id}
+                    required_rows.append(tuple(data_dict.values()))
             cur.close()
-            print(dff)
-            self.InsertORUpdate(dff, db)
-            print('\n WA updated.....')
+            self.InsertORUpdate(required_rows, db)
             print("Foodtech:- WA_Calc finished")
         except Exception as e:
             print("Foodtech:- Error in WA_Calc:- ", e)
 
-    def calc_script(self, pl_id, sd, ed, db, id_name_dict):
+    def calc_script(self, pl_id, sd, ed, db, id_name_dict, rep_ver_id):
         try:
             calc_dict = self.reset_calc_dict(id_name_dict)
             try:
                 d = self.par_val_dict(pl_id, sd, ed, db, id_name_dict)
-                print(d)
             except:
                 pass
             try:
                 calc_dict["340:Rest of India('000)"] = d["336:Pan India('000)"] - (
-                    d["337:Top 10 cities('000)"] + d["338:Top 11-25 cities('000)"] +
-                    d["339:Top 26-50 cities('000)"])
+                    d["337:Top 10 cities('000)"] + d[
+                        "338:Top 11-25 cities('000)"] + d["339:Top 26-50 cities('000)"]
+                )
+            except:
+                pass
+            try:
+                calc_dict['3197:Pan India'] = d["336:Pan India('000)"
+                                                ] * self.month_range(sd)
+                calc_dict['3179:a) Top 10 cities'] = d["337:Top 10 cities('000)"
+                                                       ] * self.month_range(sd)
+                calc_dict['3180:b) Top 11-25 cities'] = d[
+                    "338:Top 11-25 cities('000)"] * self.month_range(sd)
+                calc_dict['3181:c) Top 26-50 cities'] = d[
+                    "339:Top 26-50 cities('000)"] * self.month_range(sd)
+                calc_dict['3182:d) Rest of India (exclusive top 50 cities)'
+                          ] = calc_dict["340:Rest of India('000)"] * self.month_range(sd)
             except:
                 pass
             try:
                 calc_dict["1602:Rest of India(Exclusive M,T1,T2)('000)"] = d[
                     "336:Pan India('000)"] - (d["1599:Metro Cities('000)"] + d[
                         "1600:Tier-1 Cities('000)"] + d["1601:Tier-2 Cities('000)"])
+                calc_dict['3183:Metro Cities'] = d["1599:Metro Cities('000)"
+                                                   ] * self.month_range(sd)
+                calc_dict['3184:Tier-1 Cities'] = d["1600:Tier-1 Cities('000)"
+                                                    ] * self.month_range(sd)
+                calc_dict['3185:Tier-2 Cities'] = d["1601:Tier-2 Cities('000)"
+                                                    ] * self.month_range(sd)
+                calc_dict['3186:Rest of India(Exclusive M,T1,T2)'] = calc_dict[
+                    "1602:Rest of India(Exclusive M,T1,T2)('000)"] * self.month_range(sd
+                                                                                      )
             except:
                 pass
             try:
-                calc_dict["352:Top 10 cities('000)"] = d["337:Top 10 cities('000)"] * (
-                    100 - d['342:Top 10 cities(%)']) / 100
+                calc_dict["352:Top 10 cities('000)"] = d["337:Top 10 cities('000)"
+                                                         ] * (100 - d['342:Top 10 cities(%)']) / 100
             except:
                 pass
             try:
                 calc_dict["353:Top 11-25 cities('000)"] = d[
-                    "338:Top 11-25 cities('000)"] * (100 - d['343:Top 11-25 cities(%)']
-                                                     ) / 100
+                    "338:Top 11-25 cities('000)"] * (100 - d[
+                        '343:Top 11-25 cities(%)']) / 100
             except:
                 pass
             try:
                 calc_dict["354:Top 26-50 cities('000)"] = d[
-                    "339:Top 26-50 cities('000)"] * (100 - d['344:Top 26-50 cities(%)']
-                                                     ) / 100
+                    "339:Top 26-50 cities('000)"] * (100 - d[
+                        '344:Top 26-50 cities(%)']) / 100
             except:
                 pass
             try:
@@ -348,18 +329,20 @@ class CalculatedParamFoodtechFn:
             except:
                 pass
             try:
-                calc_dict["1611:Metro Cities('000)"] = d["1599:Metro Cities('000)"] * (
-                    100 - d['1603:Metro Cities(%)']) / 100
+                calc_dict["1611:Metro Cities('000)"] = d["1599:Metro Cities('000)"
+                                                         ] * (100 - d['1603:Metro Cities(%)']) / 100
             except:
                 pass
             try:
-                calc_dict["1612:Tier-1 Cities('000)"] = d["1600:Tier-1 Cities('000)"
-                                                          ] * (100 - d['1604:Tier-1 Cities(%)']) / 100
+                calc_dict["1612:Tier-1 Cities('000)"] = d[
+                    "1600:Tier-1 Cities('000)"] * (100 - d['1604:Tier-1 Cities(%)']
+                                                   ) / 100
             except:
                 pass
             try:
-                calc_dict["1613:Tier-2 Cities('000)"] = d["1601:Tier-2 Cities('000)"
-                                                          ] * (100 - d['1605:Tier-2 Cities(%)']) / 100
+                calc_dict["1613:Tier-2 Cities('000)"] = d[
+                    "1601:Tier-2 Cities('000)"] * (100 - d['1605:Tier-2 Cities(%)']
+                                                   ) / 100
             except:
                 pass
             try:
@@ -369,26 +352,30 @@ class CalculatedParamFoodtechFn:
             except:
                 pass
             try:
-                calc_dict['361:Pan India(INR)'] = (d['362:Top 10 cities(INR)'] * d[
-                    "337:Top 10 cities('000)"] + d["338:Top 11-25 cities('000)"] *
-                    d['363:Top 11-25 cities(INR)'] + d['364:Top 26-50 cities(INR)'] *
-                    d["339:Top 26-50 cities('000)"] + d[
+                calc_dict['361:Pan India(INR)'] = (d['362:Top 10 cities(INR)'] *
+                                                   d["337:Top 10 cities('000)"] + d[
+                    "338:Top 11-25 cities('000)"] * d[
+                    '363:Top 11-25 cities(INR)'] + d[
+                    '364:Top 26-50 cities(INR)'] * d[
+                    "339:Top 26-50 cities('000)"] + d[
                     '365:Rest of India (exclusive top 50 cities) (INR)'] *
                     calc_dict["340:Rest of India('000)"]) / (d[
-                        "337:Top 10 cities('000)"] + d["338:Top 11-25 cities('000)"] +
-                    d["339:Top 26-50 cities('000)"] + calc_dict[
+                        "337:Top 10 cities('000)"] + d["338:Top 11-25 cities('000)"
+                                                       ] + d["339:Top 26-50 cities('000)"] + calc_dict[
                         "340:Rest of India('000)"])
             except:
                 pass
             try:
-                calc_dict['366:Pan India(INR)'] = (d['367:Top 10 cities(INR)'] * d[
-                    "337:Top 10 cities('000)"] + d["338:Top 11-25 cities('000)"] *
-                    d['368:Top 11-25 cities(INR)'] + d['369:Top 26-50 cities(INR)'] *
-                    d["339:Top 26-50 cities('000)"] + d[
+                calc_dict['366:Pan India(INR)'] = (d['367:Top 10 cities(INR)'] *
+                                                   d["337:Top 10 cities('000)"] + d[
+                    "338:Top 11-25 cities('000)"] * d[
+                    '368:Top 11-25 cities(INR)'] + d[
+                    '369:Top 26-50 cities(INR)'] * d[
+                    "339:Top 26-50 cities('000)"] + d[
                     '370:Rest of India (exclusive top 50 cities) (INR)'] *
                     calc_dict["340:Rest of India('000)"]) / (d[
-                        "337:Top 10 cities('000)"] + d["338:Top 11-25 cities('000)"] +
-                    d["339:Top 26-50 cities('000)"] + calc_dict[
+                        "337:Top 10 cities('000)"] + d["338:Top 11-25 cities('000)"
+                                                       ] + d["339:Top 26-50 cities('000)"] + calc_dict[
                         "340:Rest of India('000)"])
             except:
                 pass
@@ -398,18 +385,18 @@ class CalculatedParamFoodtechFn:
             except:
                 pass
             try:
-                calc_dict['357:Top 10 cities(INR)'] = d['367:Top 10 cities(INR)'] - d[
-                    '362:Top 10 cities(INR)']
+                calc_dict['357:Top 10 cities(INR)'] = d['367:Top 10 cities(INR)'
+                                                        ] - d['362:Top 10 cities(INR)']
             except:
                 pass
             try:
-                calc_dict['358:Top 11-25 cities(INR)'] = d['368:Top 11-25 cities(INR)'
-                                                           ] - d['363:Top 11-25 cities(INR)']
+                calc_dict['358:Top 11-25 cities(INR)'] = d[
+                    '368:Top 11-25 cities(INR)'] - d['363:Top 11-25 cities(INR)']
             except:
                 pass
             try:
-                calc_dict['359:Top 26-50 cities(INR)'] = d['369:Top 26-50 cities(INR)'
-                                                           ] - d['364:Top 26-50 cities(INR)']
+                calc_dict['359:Top 26-50 cities(INR)'] = d[
+                    '369:Top 26-50 cities(INR)'] - d['364:Top 26-50 cities(INR)']
             except:
                 pass
             try:
@@ -419,8 +406,8 @@ class CalculatedParamFoodtechFn:
             except:
                 pass
             try:
-                calc_dict['1615:Metro Cities(INR)'] = d['1623:Metro Cities(INR)'] - d[
-                    '1619:Metro Cities(INR)']
+                calc_dict['1615:Metro Cities(INR)'] = d['1623:Metro Cities(INR)'
+                                                        ] - d['1619:Metro Cities(INR)']
             except:
                 pass
             try:
@@ -441,12 +428,14 @@ class CalculatedParamFoodtechFn:
                 pass
             try:
                 calc_dict['371:Pan India(INR Cr)'] = self.month_range(sd) * d[
-                    "336:Pan India('000)"] * calc_dict['366:Pan India(INR)'] / 10 ** 4
+                    "336:Pan India('000)"] * calc_dict['366:Pan India(INR)'
+                                                       ] / 10 ** 4
             except:
                 pass
             try:
                 calc_dict['372:Top 10 cities(INR Cr)'] = self.month_range(sd) * d[
-                    "337:Top 10 cities('000)"] * d['367:Top 10 cities(INR)'] / 10 ** 4
+                    "337:Top 10 cities('000)"] * d['367:Top 10 cities(INR)'
+                                                   ] / 10 ** 4
             except:
                 pass
             try:
@@ -471,7 +460,8 @@ class CalculatedParamFoodtechFn:
                 pass
             try:
                 calc_dict['1627:Metro Cities(INR Cr)'] = self.month_range(sd) * d[
-                    "1599:Metro Cities('000)"] * d['1623:Metro Cities(INR)'] / 10 ** 4
+                    "1599:Metro Cities('000)"] * d['1623:Metro Cities(INR)'
+                                                   ] / 10 ** 4
             except:
                 pass
             try:
@@ -487,53 +477,53 @@ class CalculatedParamFoodtechFn:
             except:
                 pass
             try:
-                calc_dict['1630:Rest of India(Exclusive M,T1,T2)(INR Cr)'] = calc_dict[
-                    '371:Pan India(INR Cr)'] - (calc_dict[
-                        '1627:Metro Cities(INR Cr)'] + calc_dict[
-                        '1628:Tier-1 Cities(INR Cr)'] + calc_dict[
-                        '1629:Tier-2 Cities(INR Cr)'])
+                calc_dict['1630:Rest of India(Exclusive M,T1,T2)(INR Cr)'
+                          ] = calc_dict['371:Pan India(INR Cr)'] - (calc_dict[
+                              '1627:Metro Cities(INR Cr)'] + calc_dict[
+                              '1628:Tier-1 Cities(INR Cr)'] + calc_dict[
+                              '1629:Tier-2 Cities(INR Cr)'])
             except:
                 pass
             try:
                 calc_dict['323:Top 10 cities(%)'] = calc_dict[
-                    '372:Top 10 cities(INR Cr)'] / calc_dict['371:Pan India(INR Cr)'
-                                                             ] * 100
+                    '372:Top 10 cities(INR Cr)'] / calc_dict[
+                    '371:Pan India(INR Cr)'] * 100
             except:
                 pass
             try:
                 calc_dict['324:Top 11-25 cities(%)'] = calc_dict[
-                    '373:Top 11-25 cities(INR Cr)'] / calc_dict['371:Pan India(INR Cr)'
-                                                                ] * 100
+                    '373:Top 11-25 cities(INR Cr)'] / calc_dict[
+                    '371:Pan India(INR Cr)'] * 100
             except:
                 pass
             try:
                 calc_dict['325:Top 26-50 cities(%)'] = calc_dict[
-                    '374:Top 26-50 cities(INR Cr)'] / calc_dict['371:Pan India(INR Cr)'
-                                                                ] * 100
+                    '374:Top 26-50 cities(INR Cr)'] / calc_dict[
+                    '371:Pan India(INR Cr)'] * 100
             except:
                 pass
             try:
                 calc_dict['326:Remaining Cities(%)'] = calc_dict[
-                    '375:Rest of India(INR Cr)'] / calc_dict['371:Pan India(INR Cr)'
-                                                             ] * 100
+                    '375:Rest of India(INR Cr)'] / calc_dict[
+                    '371:Pan India(INR Cr)'] * 100
             except:
                 pass
             try:
                 calc_dict['1632:Metro Cities(%)'] = calc_dict[
-                    '1627:Metro Cities(INR Cr)'] / calc_dict['371:Pan India(INR Cr)'
-                                                             ] * 100
+                    '1627:Metro Cities(INR Cr)'] / calc_dict[
+                    '371:Pan India(INR Cr)'] * 100
             except:
                 pass
             try:
                 calc_dict['1633:Tier-1 Cities(%)'] = calc_dict[
-                    '1628:Tier-1 Cities(INR Cr)'] / calc_dict['371:Pan India(INR Cr)'
-                                                              ] * 100
+                    '1628:Tier-1 Cities(INR Cr)'] / calc_dict[
+                    '371:Pan India(INR Cr)'] * 100
             except:
                 pass
             try:
                 calc_dict['1634:Tier-2 Cities(%)'] = calc_dict[
-                    '1629:Tier-2 Cities(INR Cr)'] / calc_dict['371:Pan India(INR Cr)'
-                                                              ] * 100
+                    '1629:Tier-2 Cities(INR Cr)'] / calc_dict[
+                    '371:Pan India(INR Cr)'] * 100
             except:
                 pass
             try:
@@ -558,9 +548,9 @@ class CalculatedParamFoodtechFn:
                     "1644:Noida ('000s)"] * self.month_range(sd) / 10 ** 4
                 calc_dict['1691:Gurgaon(INR Cr)'] = d['1668:Gurgaon(INR)'] * d[
                     "1645:Gurgaon ('000s)"] * self.month_range(sd) / 10 ** 4
-                calc_dict['1688:Delhi NCR(INR Cr)'] = calc_dict['1689:Delhi (INR Cr)'
-                                                                ] + calc_dict['1690:Noida(INR Cr)'] + calc_dict[
-                    '1691:Gurgaon(INR Cr)']
+                calc_dict['1688:Delhi NCR(INR Cr)'] = calc_dict[
+                    '1689:Delhi (INR Cr)'] + calc_dict['1690:Noida(INR Cr)'
+                                                       ] + calc_dict['1691:Gurgaon(INR Cr)']
                 calc_dict['1692:Mumbai(INR Cr)'] = d['1669:Mumbai(INR)'] * d[
                     "1646:Mumbai ('000s)"] * self.month_range(sd) / 10 ** 4
                 calc_dict['1693:Chennai(INR Cr)'] = d['1670:Chennai(INR)'] * d[
@@ -573,12 +563,12 @@ class CalculatedParamFoodtechFn:
                     "1650:Ahmedabad ('000s)"] * self.month_range(sd) / 10 ** 4
                 calc_dict['1697:Jaipur(INR Cr)'] = d['1674:Jaipur(INR)'] * d[
                     "1651:Jaipur('000s)"] * self.month_range(sd) / 10 ** 4
-                calc_dict['1698:Coimbatore(INR Cr)'] = d['1675:Coimbatore(INR)'] * d[
-                    "1652:Coimbatore ('000s)"] * self.month_range(sd) / 10 ** 4
+                calc_dict['1698:Coimbatore(INR Cr)'] = d['1675:Coimbatore(INR)'
+                                                         ] * d["1652:Coimbatore ('000s)"] * self.month_range(sd) / 10 ** 4
                 calc_dict['1699:Lucknow(INR Cr)'] = d['1676:Lucknow(INR)'] * d[
                     "1653:Lucknow ('000s)"] * self.month_range(sd) / 10 ** 4
-                calc_dict['1700:Chandigarh(INR Cr)'] = d['1677:Chandigarh(INR)'] * d[
-                    "1654:Chandigarh ('000s)"] * self.month_range(sd) / 10 ** 4
+                calc_dict['1700:Chandigarh(INR Cr)'] = d['1677:Chandigarh(INR)'
+                                                         ] * d["1654:Chandigarh ('000s)"] * self.month_range(sd) / 10 ** 4
                 calc_dict['1701:Vizag(INR Cr)'] = d['1678:Vizag(INR)'] * d[
                     "1655:Vizag ('000s)"] * self.month_range(sd) / 10 ** 4
                 calc_dict['1702:Kochi(INR Cr)'] = d['1679:Kochi(INR)'] * d[
@@ -598,63 +588,49 @@ class CalculatedParamFoodtechFn:
             except:
                 pass
             try:
-                calc_dict['1665:Delhi NCR(INR)'] = calc_dict['1688:Delhi NCR(INR Cr)'
-                                                             ] / (calc_dict["1642:Delhi NCR ('000s)"] * self.month_range(sd)) * 10000
+                calc_dict['1665:Delhi NCR(INR)'] = calc_dict[
+                    '1688:Delhi NCR(INR Cr)'] / (calc_dict[
+                        "1642:Delhi NCR ('000s)"] * self.month_range(sd)) * 10000
             except:
                 pass
             try:
-                if d['2861:% Super/Pro orders'] != 0:
-                    calc_dict['2862:% Non Super/Pro orders'] = 100 - d[
-                        '2861:% Super/Pro orders']
+                calc_dict['2862:% Non Super/Pro orders'] = 100 - d[
+                    '2861:% Super/Pro orders']
             except:
                 pass
             try:
                 calc_dict['313:borne by platform(%)'] = 100 - d[
                     '312:borne by restaurant(%)']
-                if calc_dict['313:borne by platform(%)'] == 100:
-                    calc_dict['313:borne by platform(%)'] = 0
             except:
                 pass
             try:
                 calc_dict['316:% of non-discounted orders(%)'] = 100 - d[
                     '315:% of discounted orders (%)']
-                if calc_dict['316:% of non-discounted orders(%)'] == 100:
-                    calc_dict['316:% of non-discounted orders(%)'] = 0
             except:
                 pass
             try:
                 calc_dict['319:Other prepaid modes(%)'] = 100 - d[
                     '317:COD (Cash on Delivery)(%)']
-                if calc_dict['319:Other prepaid modes(%)'] == 100:
-                    calc_dict['319:Other prepaid modes(%)'] = 0
             except:
                 pass
             try:
                 calc_dict['322:Restaurant(%)'] = 100 - (d['320:Own(%)'] + d[
                     '321:Partner (3PL)(%)'])
-                if calc_dict['322:Restaurant(%)'] == 100:
-                    calc_dict['322:Restaurant(%)'] = 0
             except:
                 pass
             try:
                 calc_dict['1710:% of orders on Weekend(%)'] = 100 - d[
                     '1709:% of orders on Weekday(%)']
-                if calc_dict['1710:% of orders on Weekend(%)'] == 100:
-                    calc_dict['1710:% of orders on Weekend(%)'] = 0
             except:
                 pass
             try:
                 calc_dict['1715:% of Late Night(%)'] = 100 - (d[
                     '1712:% of Lunch(%)'] + d['1713:% of Snacks(%)'] + d[
                     '1714:% of Dinner(%)'] + d['1711:% of Breakfast(%)'])
-                if calc_dict['1715:% of Late Night(%)'] == 100:
-                    calc_dict['1715:% of Late Night(%)'] = 0
             except:
                 pass
             try:
                 calc_dict['1716:Website/M.site(%)'] = 100 - d['1717:App(%)']
-                if calc_dict['1716:Website/M.site(%)'] == 100:
-                    calc_dict['1716:Website/M.site(%)'] = 0
             except:
                 pass
             try:
@@ -670,8 +646,8 @@ class CalculatedParamFoodtechFn:
             except:
                 pass
             try:
-                calc_dict['3168:AOV (Exc.Del fees- Post Discount)(INR)'] = calc_dict[
-                    '1720:AOV excluding delivery fees(INR)'] - d[
+                calc_dict['3168:AOV (Exc.Del fees- Post Discount)(INR)'
+                          ] = calc_dict['1720:AOV excluding delivery fees(INR)'] - d[
                     '1723:Overall discounts offered to customer(INR)']
             except:
                 pass
@@ -683,15 +659,17 @@ class CalculatedParamFoodtechFn:
             except:
                 pass
             try:
-                calc_dict["351:Pan India('000)"] = calc_dict["352:Top 10 cities('000)"
-                                                             ] + calc_dict["353:Top 11-25 cities('000)"] + calc_dict[
-                    "354:Top 26-50 cities('000)"] + calc_dict["355:Rest of India('000)"
-                                                              ]
+                calc_dict["351:Pan India('000)"] = calc_dict[
+                    "352:Top 10 cities('000)"] + calc_dict[
+                    "353:Top 11-25 cities('000)"] + calc_dict[
+                    "354:Top 26-50 cities('000)"] + calc_dict[
+                    "355:Rest of India('000)"]
             except:
                 pass
             try:
                 calc_dict['341:Pan India(%)'] = (d["336:Pan India('000)"] -
-                                                 calc_dict["351:Pan India('000)"]) / d["336:Pan India('000)"] * 100
+                                                 calc_dict["351:Pan India('000)"]) / d["336:Pan India('000)"
+                                                                                       ] * 100
             except:
                 pass
             try:
@@ -700,8 +678,8 @@ class CalculatedParamFoodtechFn:
             except:
                 pass
             try:
-                calc_dict["307:Fulfilled orders ('000)"] = d["336:Pan India('000)"] * (
-                    100 - calc_dict['341:Pan India(%)']) / 100
+                calc_dict["307:Fulfilled orders ('000)"] = d["336:Pan India('000)"
+                                                             ] * (100 - calc_dict['341:Pan India(%)']) / 100
             except:
                 pass
             try:
@@ -713,7 +691,8 @@ class CalculatedParamFoodtechFn:
             try:
                 calc_dict[
                     '334:Number of orders per rider per day (Assuming 24 days of working for each DE)(#)'
-                ] = calc_dict['333:Number of orders per rider per month(#)'] / 24
+                ] = calc_dict['333:Number of orders per rider per month(#)'
+                              ] / 24
             except:
                 pass
             try:
@@ -743,22 +722,22 @@ class CalculatedParamFoodtechFn:
                 pass
             try:
                 calc_dict['1332:Transaction Frequency'] = d["336:Pan India('000)"
-                                                            ] * self.month_range(sd) / d['238:Monthly Transacting Users (Mn)']
+                                                            ] * self.month_range(sd) / d['238:Monthly Transacting Users (Mn)'
+                                                                                         ] / 10 ** 3
             except:
                 pass
-            required_df = []
+            required_rows = []
             for k in calc_dict:
-                if calc_dict[k] == 0:
+                if not calc_dict[k]:
                     continue
                 parameter_id, parameter_name = k.split(':')
                 parameter_id = int(parameter_id)
-                required_df.append({'player_id': pl_id, 'start_date': str(sd),
-                                    'end_date': str(ed), 'parameter_id': parameter_id, 'value':
-                                    calc_dict[k], 'date_created': date.today(), 'source':
-                                    'webforms_calc', 'parametertree_id': 52})
-            dff = pd.DataFrame(required_df)
-            print("Foodtech:- ", dff)
-            self.InsertORUpdate(dff, db)
+                data_dict = {'player_id': pl_id, 'start_date': str(sd),
+                             'end_date': str(ed), 'parameter_id': parameter_id, 'value':
+                             calc_dict[k], 'date_created': str(date.today()), 'source':
+                             'webforms_calc', 'parametertree_id': 52, 'report_version_id': rep_ver_id}
+                required_rows.append(tuple(data_dict.values()))
+            self.InsertORUpdate(required_rows, db)
             print("Foodtech:- calc_script finished")
         except Exception as e:
             print("Foodtech:- Error in calc_script:- ", e)
@@ -799,11 +778,11 @@ class CalculatedParamFoodtechFn:
             sd = str(data_df['start_date'].unique()[0])
             ed = str(data_df['end_date'].unique()[0])
             cur.close()
-            self.calc_script(player_id, sd, ed, db, id_name_dict)
+            self.calc_script(player_id, sd, ed, db, id_name_dict, rep_ver_id)
             WA_input_df = self.get_WA_sheet()
-            self.WA_Calc(player_id, WA_input_df, sd, ed, db)
-            self.calc1(player_id, str(sd), str(ed), db)
-            self.calc2(player_id, sd, ed, db)
+            self.WA_Calc(player_id, WA_input_df, sd, ed, db, rep_ver_id)
+            self.calc1(player_id, sd, ed, db, rep_ver_id)
+            self.calc2(player_id, sd, ed, db, rep_ver_id)
             self.calc3(db)
             print("Foodtech:- report_version_id finished")
         except Exception as e:
