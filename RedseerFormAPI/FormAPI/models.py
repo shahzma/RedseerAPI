@@ -6,10 +6,12 @@ from django.dispatch import receiver
 from django.db.models.signals import post_save, pre_save
 from django.core.mail import EmailMessage
 from django.conf import settings
+import pandas as pd
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 from datetime import date, timedelta
+from RedseerFormAPI.FormAPI.utils.powerbi_refresh import PowerbiRefresh
 from .utils.service_utils import CalculatedParamFn
 from .utils.service_utils_foodtech import CalculatedParamFoodtechFn
 import calendar
@@ -17,7 +19,6 @@ import datetime
 import requests
 import json
 from datetime import date
-from dotenv import load_dotenv
 import os
 from .apps import FormapiConfig as AppConfig
 # Create your models here.
@@ -412,29 +413,34 @@ def fill_audit_table(sender, instance, created, **kwargs):
 @receiver(post_save, sender=ReportVersion)
 def refresh_power_bi(sender, instance, created, **kwargs):
     print('refresh fn triggered')
-        # refresh power bi. should run 1 time only so need to make changes to if condition
+    # refresh power bi. should run 1 time only so need to make changes to if condition
     try:
         if instance.is_submitted and instance.approved_by_level == 1:
             date_created = instance.date_created
             end_date = date_created.replace(day=1) - timedelta(days=1)
-            start_date = date_created.replace(day=1) - timedelta(days=end_date.day)
+            start_date = date_created.replace(
+                day=1) - timedelta(days=end_date.day)
             start_date = str(start_date.date())
             end_date = str(end_date.date())
             report_id = instance.report_id
-            player_id = Player.objects.filter(player_name=instance.company)[0].player_id
+            player_id = Player.objects.filter(
+                player_name=instance.company)[0].player_id
             try:
                 tmp = CalculatedParamFn()
-                tmpFoodtech = CalculatedParamFoodtechFn() 
+                tmpFoodtech = CalculatedParamFoodtechFn()
                 if report_id == 14:
                     tmpFoodtech.report_version_id(instance.id)
                 if report_id == 45:
                     tmp.calc_script_eb2b(player_id, start_date, end_date)
                 if report_id == 46:
-                    tmp.calc_script_eb2bGrocery(player_id, start_date, end_date)
+                    tmp.calc_script_eb2bGrocery(
+                        player_id, start_date, end_date)
                 if report_id == 47:
-                    tmp.calc_script_eb2bElectronics(player_id, start_date, end_date)
+                    tmp.calc_script_eb2bElectronics(
+                        player_id, start_date, end_date)
                 if report_id == 48:
-                    tmp.calc_script_eb2bEPharma(player_id, start_date, end_date)
+                    tmp.calc_script_eb2bEPharma(
+                        player_id, start_date, end_date)
                 if report_id == 6:
                     tmp.calc_script_csm(player_id, start_date, end_date)
                 if report_id == 5:
@@ -450,7 +456,8 @@ def refresh_power_bi(sender, instance, created, **kwargs):
                 if report_id == 40:
                     tmp.calc_script_meatCore(player_id, start_date, end_date)
                 if report_id == 41:
-                    tmp.calc_script_meatMarketPlace(player_id, start_date, end_date)
+                    tmp.calc_script_meatMarketPlace(
+                        player_id, start_date, end_date)
                 if report_id == 42:
                     tmp.calc_script_d2c(player_id, start_date, end_date)
                 if report_id == 28:
@@ -458,13 +465,84 @@ def refresh_power_bi(sender, instance, created, **kwargs):
                 if report_id == 43:
                     tmp.calc_script_mobility(player_id, start_date, end_date)
                 if report_id == 19:
-                    tmp.calc_script_horizontals(player_id, start_date, end_date)
+                    tmp.calc_script_horizontals(
+                        player_id, start_date, end_date)
                 if report_id == 54:
                     tmp.calc_script_foodtech(player_id, start_date, end_date)
                 if report_id == 25:
                     tmp.calc_script_ehealth(player_id, start_date, end_date)
             except:
                 pass
+        # Push to powerbi reportUpdate
+        if (os.getenv('POWERBI_REPORT_REFRESH', 'False') == 'True'):
+            pbAllReports = pd.read_excel('powerbi_players_reports.xlsx')
+            form_player_name = instance.company
+            playerPowerBiReport = pbAllReports[pbAllReports['player_name'] == form_player_name].iloc[0]
+
+            max_level = Report.objects.filter(id=instance.report_id)[
+            0].max_level_needed
+            form_report_id = report_id = instance.report_id
+            powerbiRefresh = PowerbiRefresh()
+
+            # refresh test
+            if instance.is_submitted and instance.approved_by_level == 1:
+                print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: PB test reports refresh start for player -', form_player_name)
+                try: 
+                    if pd.notnull(playerPowerBiReport['company_profile']):     
+                        powerbiRefresh.test(playerPowerBiReport['company_profile'])
+                        print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: PB test company report refreshed for player -', form_player_name)
+                    if pd.notnull(playerPowerBiReport['report_name']):     
+                        powerbiRefresh.test(playerPowerBiReport['report_name'])
+                        print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: PB test sector report refreshed for player -', form_player_name)
+                except Exception as e:
+                    print(
+                        f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: PB test report refreshed mets error-', e)
+            # refresh prod
+            if instance.is_submitted and instance.approved_by_level == max_level:
+                # check all forms of that industry got approved to max level or not
+                current_month = datetime.datetime.now().month
+                current_year = datetime.datetime.now().year
+                incompleteWebforms = ReportVersion.objects.filter(
+                    date_created__month=current_month, 
+                    date_created__year=current_year, 
+                    approved_by_level__lt=models.F('max_level_needed'),
+                    report_id=form_report_id)
+                incompleteWebformsCounts = incompleteWebforms.count()
+                if incompleteWebformsCounts==0:
+                    print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: PB prod sector reports refresh start for player -', form_player_name)
+                    email_list = ['amardeep.s@redseerconsulting.com']
+                    if email_list:
+                        try:
+                            msg = EmailMessage(
+                                'PB production report refreshing',
+                                f'Dear user,<br><br>Your PB production report getting refreshed for report_id= <b><i>{form_report_id}</i></b>.',
+                                settings.EMAIL_HOST_USER,
+                                email_list
+                            )
+                            msg.content_subtype = "html"
+                            mail_status = msg.send()
+                        except Exception as e:
+                            print(
+                                f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: PB production report refresh mail trigger error -', e)
+                    try:
+                        # refresh all reports of that sector
+                        sectorPlayers = pbAllReports[pbAllReports['report_id'] == report_id]
+                        for index, row in sectorPlayers.iterrows():
+                            try: 
+                                if pd.notnull(row['company_profile']):     
+                                    powerbiRefresh.prod(row['company_profile'])
+                                    print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: PB prod company report refreshed for player -', row['player_name'])
+                                # refresh sector report at the end
+                                if pd.notnull(row['report_name']) and index == sectorPlayers.index[-1]:     
+                                    powerbiRefresh.prod(row['report_name'])
+                                    print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: PB test sector report refreshed for report -', row['report_name'])
+                        
+                            except Exception as e:
+                                print(
+                                    f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: PB production report refresh script error1 -', e)
+                    except Exception as e:
+                        print(
+                            f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: PB production report refresh script error2 -', e)
 
         workspace_id = os.getenv("workspace_id")
         url = "https://login.microsoftonline.com/common/oauth2/token"
