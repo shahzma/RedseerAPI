@@ -254,7 +254,7 @@ class CalculatedParamFoodtechFn:
                 if val != 0:
                     data_dict = {'player_id': player_id, 'start_date': sd,
                                  'end_date': ed, 'parameter_id': par_id, 'value': val,
-                                 'date_created': dt, 'source': 'Benchmarks',
+                                 'date_created': dt, 'source': 'weight_avg',
                                  'parametertree_id': 52, 'report_version_id': rep_ver_id}
                     required_rows.append(tuple(data_dict.values()))
             cur.close()
