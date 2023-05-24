@@ -11,7 +11,7 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 from datetime import date, timedelta
-from RedseerFormAPI.FormAPI.utils.powerbi_refresh import PowerbiRefresh
+from FormAPI.utils.powerbi_refresh import PowerbiRefresh
 from .utils.service_utils import CalculatedParamFn
 from .utils.service_utils_foodtech import CalculatedParamFoodtechFn
 import calendar
@@ -415,7 +415,7 @@ def refresh_power_bi(sender, instance, created, **kwargs):
     print('refresh fn triggered')
     # refresh power bi. should run 1 time only so need to make changes to if condition
     try:
-        if instance.is_submitted and instance.approved_by_level == 1:
+        if instance.is_submitted and instance.approved_by_level >= 1:
             date_created = instance.date_created
             end_date = date_created.replace(day=1) - timedelta(days=1)
             start_date = date_created.replace(
