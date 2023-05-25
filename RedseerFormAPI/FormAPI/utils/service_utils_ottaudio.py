@@ -80,10 +80,10 @@ class CalculatedParamOTTAudioFn:
             value_list=[tuple(df.values()) for df in dff]
             query = """
             INSERT INTO main_data (
-                player_id, start_date, end_date, parameter_id, value, date_created, source, parametertree_id
+                player_id, start_date, end_date, parameter_id, value, date_created, source, parametertree_id, report_version_id
             ) 
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s) as value_list
-            ON DUPLICATE KEY UPDATE value = VALUES(value), date_created = VALUES(date_created)
+            ON DUPLICATE KEY UPDATE value = VALUES(value), date_created = VALUES(date_created), report_version_id = VALUES(report_version_id)
             """
             cur.executemany(query, value_list)
             db.commit()
@@ -173,7 +173,7 @@ class CalculatedParamOTTAudioFn:
     
 
     
-    def WA_Calc(self,pl,sd,ed):
+    def WA_Calc(self,pl,sd,ed,rep_ver_id):
         yls=self.upload_resumable2()
         df=pd.read_excel(yls,"OTT Audio", header=None, index_col=False)
         required_df=[]
@@ -226,7 +226,7 @@ class CalculatedParamOTTAudioFn:
                 val=val/100
             if val!=0:
                 print(val)
-                required_df.append({"player_id":pl,'start_date':sd,'end_date':ed,'parameter_id':par_id,'value':val,"date_created":dt,"source":'weight_avg','parametertree_id':52})    
+                required_df.append({"player_id":pl,'start_date':sd,'end_date':ed,'parameter_id':par_id,'value':val,"date_created":dt,"source":'weight_avg','parametertree_id':52,'report_version_id':rep_ver_id})    
         print("\n"+"WA Insertion")
         self.InsertORUpdate(required_df)
         print("\n WA updated.....")
@@ -296,7 +296,7 @@ class CalculatedParamOTTAudioFn:
         cur.close()
         db.close()
 
-    def calc_script_audio(self, pl_id, sd, ed,pr_sd,pr_ed):
+    def calc_script_audio(self, pl_id, sd, ed,pr_sd,pr_ed,rep_ver_id):
         calc_dict = {}
         print(pl_id)
         try:
@@ -403,7 +403,7 @@ class CalculatedParamOTTAudioFn:
         for k in calc_dict:
             if not calc_dict[k]:
                 continue
-            required_df.append({"player_id":pl_id,'start_date':str(sd),'end_date':str(ed),'parameter_id':k,'value':calc_dict[k],"date_created": str(date.today()),"source":'webforms_calc','parametertree_id':52})
+            required_df.append({"player_id":pl_id,'start_date':str(sd),'end_date':str(ed),'parameter_id':k,'value':calc_dict[k],"date_created": str(date.today()),"source":'webforms_calc','parametertree_id':52,'report_version_id':rep_ver_id})
         self.InsertORUpdate(required_df)
 
     def report_version_id(self, rep_ver_id):
@@ -429,8 +429,8 @@ class CalculatedParamOTTAudioFn:
             p_sd=self.pr_sd(par[0][1])
             p_ed=self.pr_ed(par[0][2])
             print(p_sd)
-            self.calc_script_audio(pl,sd,ed,str(p_sd),str(p_ed))
-            self.WA_Calc(pl,sd,ed)
+            self.calc_script_audio(pl,sd,ed,str(p_sd),str(p_ed),rep_ver_id)
+            self.WA_Calc(pl,sd,ed,rep_ver_id)
             self.OTTA(pl,sd,ed)
             cur.close()
             db.close()
