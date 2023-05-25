@@ -428,6 +428,7 @@ def refresh_power_bi(sender, instance, created, **kwargs):
             try:
                 tmp = CalculatedParamFn()
                 tmpFoodtech = CalculatedParamFoodtechFn()
+                tmpOTTAudio = CalculatedParamOTTAudioFn()
                 if report_id == 14:
                     tmpFoodtech.report_version_id(instance.id)
                 if report_id == 45:
@@ -448,7 +449,7 @@ def refresh_power_bi(sender, instance, created, **kwargs):
                 if report_id == 1:
                     tmp.calc_script_video(player_id, start_date, end_date)
                 if report_id == 4:
-                    tmp.calc_script_audio(player_id, start_date, end_date)
+                    tmpOTTAudio.report_version_id(instance.id)
                 if report_id == 33:
                     tmp.calc_script_rmg(player_id, start_date, end_date)
                 if report_id == 36:
@@ -471,8 +472,8 @@ def refresh_power_bi(sender, instance, created, **kwargs):
                     tmp.calc_script_foodtech(player_id, start_date, end_date)
                 if report_id == 25:
                     tmp.calc_script_ehealth(player_id, start_date, end_date)
-            except:
-                pass
+            except Exception as e:
+                print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: Error in triggering calulcated scripts -', e)
         # Push to powerbi reportUpdate
         if (os.getenv('POWERBI_REPORT_REFRESH', 'False') == 'True'):
             pbAllReports = pd.read_excel('powerbi_players_reports.xlsx')
@@ -557,7 +558,8 @@ def refresh_power_bi(sender, instance, created, **kwargs):
         login_output = login_output.json()
         access_token = login_output["access_token"]
         auth_url = f"https://api.powerbi.com/v1.0/myorg/groups/{workspace_id}/reports/"
-        auth_output = requests.get(auth_url, headers={'Authorization': f'Bearer {access_token}'})
+        auth_output = requests.get(
+            auth_url, headers={'Authorization': f'Bearer {access_token}'})
 
         report_list = auth_output.json()["value"]
 
@@ -566,7 +568,8 @@ def refresh_power_bi(sender, instance, created, **kwargs):
             if report["name"] in required_name_list:
                 dataset_id = report["datasetId"]
                 refresh_url = f"https://api.powerbi.com/v1.0/myorg/datasets/{dataset_id}/refreshes"
-                response = requests.post(refresh_url, headers={'Authorization': f'Bearer {access_token}'})
+                response = requests.post(refresh_url, headers={
+                                         'Authorization': f'Bearer {access_token}'})
                 print(report["name"], response)
     except:
         pass
