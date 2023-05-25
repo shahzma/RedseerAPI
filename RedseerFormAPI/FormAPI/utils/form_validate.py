@@ -1,5 +1,3 @@
-# from sklearn import metrics, linear_model
-# import matplotlib.pyplot as plt
 import pandas as pd
 import pymysql
 from django.conf import settings
@@ -62,20 +60,12 @@ class ValidateForm:
                     std_last_12_months
 
                 # threshold_2 -> % change from last_month to reference month for the previous year
-                del_change_t1 = value_df[value_df["start_date"]
-                                         == previous_year_date]["pct_change"].iloc[0]
-                print(del_change_t1)
-                pv_change_factor = 0.2
-                threshold_2_UB = del_change_t1*(1 + pv_change_factor)
-                threshold_2_LB = del_change_t1*(1 - pv_change_factor)
-                boolean_exp_1 = (ref_month_change > threshold_1_UB) | (
-                    ref_month_change < threshold_1_LB)
-                if del_change_t1 > 0:
-                    boolean_exp_2 = (ref_month_change > threshold_2_UB) | (
-                        ref_month_change < threshold_2_LB)
-                else:
-                    boolean_exp_2 = (ref_month_change < threshold_2_UB) | (
-                        ref_month_change > threshold_2_LB)
+                del_change_t1 = value_df[value_df["start_date"] == previous_year_date]["pct_change"].iloc[0]
+                dev_tolerance = 0.1
+                threshold_2_UB = del_change_t1 + dev_tolerance
+                threshold_2_LB = del_change_t1 - dev_tolerance
+                boolean_exp_1 = (ref_month_change > threshold_1_UB) or (ref_month_change < threshold_1_LB)
+                boolean_exp_2 = (ref_month_change > threshold_2_UB) or (ref_month_change < threshold_2_LB)
 
                 if boolean_exp_1:  # Past trend anomaly
                     Self_trend_anomaly = "Yes"
@@ -105,7 +95,8 @@ class ValidateForm:
                                "Seasonality_anomaly": Seasonality_anomaly}
                 AP_df_rows.append(current_row)
 
-            except:
+            except Exception as e:
+                print("FormValidate:- Error in self_trend_anomaly:- ", e)
                 continue
         Anomaly_Prediction_df = pd.DataFrame.from_dict(AP_df_rows)
         return Anomaly_Prediction_df
@@ -117,7 +108,7 @@ class ValidateForm:
         for key, value_df in Anomaly_Prediction_df.groupby("parameter_id"):
             try:
                 parameter_id = key
-                indicative_state = (value_df["Self_trend_anomaly"].iloc[0] == "Yes") | (
+                indicative_state = (value_df["Self_trend_anomaly"].iloc[0] == "Yes") or (
                     value_df["Seasonality_anomaly"].iloc[0] == "Yes")
 
                 # if the label is "Potential Anomaly", then calculate the number of corr_params which have the "Anomaly_state" = "Potential Anomaly"
@@ -127,8 +118,8 @@ class ValidateForm:
                     corr_params_series = corr_df[(
                         corr_df["parameter_id"] == parameter_id)]["corr_param_id"]
                     total_corr_params = len(corr_params_series)
-                    anomaly_state_count = len(Anomaly_Prediction_df[(Anomaly_Prediction_df["parameter_id"].isin(corr_params_series)) & (
-                        (Anomaly_Prediction_df["Self_trend_anomaly"] == "Yes") | (Anomaly_Prediction_df["Seasonality_anomaly"] == "Yes"))])
+                    anomaly_state_count = len(Anomaly_Prediction_df[(Anomaly_Prediction_df["parameter_id"].isin(corr_params_series)) and (
+                        (Anomaly_Prediction_df["Self_trend_anomaly"] == "Yes") or (Anomaly_Prediction_df["Seasonality_anomaly"] == "Yes"))])
                     corr_anomaly_fraction = anomaly_state_count/total_corr_params
                     if corr_anomaly_fraction > 0.6:
                         Actual_Observed_Anomaly.append("Yes")
