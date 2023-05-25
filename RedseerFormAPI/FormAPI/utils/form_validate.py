@@ -61,7 +61,7 @@ class ValidateForm:
 
                 # threshold_2 -> % change from last_month to reference month for the previous year
                 del_change_t1 = value_df[value_df["start_date"] == previous_year_date]["pct_change"].iloc[0]
-                dev_tolerance = 0.1
+                dev_tolerance = 0.12
                 threshold_2_UB = del_change_t1 + dev_tolerance
                 threshold_2_LB = del_change_t1 - dev_tolerance
                 boolean_exp_1 = (ref_month_change > threshold_1_UB) or (ref_month_change < threshold_1_LB)
