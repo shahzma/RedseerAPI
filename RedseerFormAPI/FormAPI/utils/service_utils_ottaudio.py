@@ -82,7 +82,7 @@ class CalculatedParamOTTAudioFn:
             INSERT INTO main_data (
                 player_id, start_date, end_date, parameter_id, value, date_created, source, parametertree_id, report_version_id
             ) 
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s) as value_list
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) as value_list
             ON DUPLICATE KEY UPDATE value = VALUES(value), date_created = VALUES(date_created), report_version_id = VALUES(report_version_id)
             """
             cur.executemany(query, value_list)
@@ -90,8 +90,9 @@ class CalculatedParamOTTAudioFn:
             print("Done")
             cur.close()
             db.close()
+            print("OTTAudio Script:- InsertORUpdate finished")
         except Exception as e:
-            print(e)
+            print("OTTAudio Script:- Error in InsertORUpdate:- ", e)
 
     @staticmethod
     def par_val_dict(pl_id, sd, ed):
@@ -174,237 +175,246 @@ class CalculatedParamOTTAudioFn:
 
     
     def WA_Calc(self,pl,sd,ed,rep_ver_id):
-        yls=self.upload_resumable2()
-        df=pd.read_excel(yls,"OTT Audio", header=None, index_col=False)
-        required_df=[]
-        dt=pd.Timestamp.today().date()
-        dt=str(dt)
-        db = pymysql.connect(
-            host=db_settings['HOST'],
-            port=int(db_settings['PORT']),
-            user=db_settings['USER'],
-            password=db_settings['PASSWORD'],
-            db=db_settings['NAME'],
-            ssl={'ssl': {'tls': True}}
-        )
-        cur=cur = db.cursor()
+        try:
+            yls=self.upload_resumable2()
+            df=pd.read_excel(yls,"OTT Audio", header=None, index_col=False)
+            required_df=[]
+            dt=pd.Timestamp.today().date()
+            dt=str(dt)
+            db = pymysql.connect(
+                host=db_settings['HOST'],
+                port=int(db_settings['PORT']),
+                user=db_settings['USER'],
+                password=db_settings['PASSWORD'],
+                db=db_settings['NAME'],
+                ssl={'ssl': {'tls': True}}
+            )
+            cur = db.cursor()
 
-        print(df)
-        print("player = ", pl)
-        for k in range(1,len(df)):
-            par_id=df.iloc[k,0]
-            if str(par_id)=='nan':
-                continue 
-            print(par_id)
-            par1=df.iloc[k,4]
-            par2=df.iloc[k,5]
-            par3=df.iloc[k,6]
-            A="SELECT value from main_data WHERE player_id= '"+str(pl)+"' AND start_date= '"+str(sd)+"'"+ \
-            "AND parameter_id='"+str(par1)+"';"
-            cur.execute(A)
-            to=cur.fetchall()
-            to=pd.DataFrame.from_dict(to)
-            par_1=0
-            par_2=0
-            if len(to)!=0:
-                par_1=to.iat[0,0]
-            if str(par2)=='no_days':
-                par_2=self.month_range(str(sd))
-            else:
-                B="SELECT value from main_data WHERE player_id= '"+str(pl)+"' AND start_date= '"+str(sd)+"'"+ \
-                "AND parameter_id='"+str(par2)+"';"
-                cur.execute(B)
+            print(df)
+            print("player = ", pl)
+            for k in range(1,len(df)):
+                par_id=df.iloc[k,0]
+                if str(par_id)=='nan':
+                    continue 
+                print(par_id)
+                par1=df.iloc[k,4]
+                par2=df.iloc[k,5]
+                par3=df.iloc[k,6]
+                A="SELECT value from main_data WHERE player_id= '"+str(pl)+"' AND start_date= '"+str(sd)+"'"+ \
+                "AND parameter_id='"+str(par1)+"';"
+                cur.execute(A)
                 to=cur.fetchall()
                 to=pd.DataFrame.from_dict(to)
+                par_1=0
+                par_2=0
                 if len(to)!=0:
-                    par_2=to.iat[0,0]
-            if str(par3)=='nan':
-                val=par_1*par_2
-                print(par_id,par3)
-            else:
-                val=par_1*par_2
-                val=val/100
-            if val!=0:
-                print(val)
-                required_df.append({"player_id":pl,'start_date':sd,'end_date':ed,'parameter_id':par_id,'value':val,"date_created":dt,"source":'weight_avg','parametertree_id':52,'report_version_id':rep_ver_id})    
-        print("\n"+"WA Insertion")
-        self.InsertORUpdate(required_df)
-        print("\n WA updated.....")
-        cur.close()
-        db.close()
+                    par_1=to.iat[0,0]
+                if str(par2)=='no_days':
+                    par_2=self.month_range(str(sd))
+                else:
+                    B="SELECT value from main_data WHERE player_id= '"+str(pl)+"' AND start_date= '"+str(sd)+"'"+ \
+                    "AND parameter_id='"+str(par2)+"';"
+                    cur.execute(B)
+                    to=cur.fetchall()
+                    to=pd.DataFrame.from_dict(to)
+                    if len(to)!=0:
+                        par_2=to.iat[0,0]
+                if str(par3)=='nan':
+                    val=par_1*par_2
+                    print(par_id,par3)
+                else:
+                    val=par_1*par_2
+                    val=val/100
+                if val!=0:
+                    print(val)
+                    required_df.append({"player_id":pl,'start_date':sd,'end_date':ed,'parameter_id':par_id,'value':val,"date_created":dt,"source":'weight_avg','parametertree_id':52,'report_version_id':rep_ver_id})    
+            self.InsertORUpdate(required_df)
+            cur.close()
+            db.close()
+            print("OTTAudio Script:- WA_Calc finished")
+        except Exception as e:
+            print("OTTAudio Script:- Error in WA_Calc:- ", e)
 
     @staticmethod
     def OTTA(player,sd,ed):#market share
-        li=[766,768,770,92,111,112,113,115,48,49,116]
-        li2=[781,782,783,772,773,775,776,777,778,779,780]
-        db = pymysql.connect(
-            host=db_settings['HOST'],
-            port=int(db_settings['PORT']),
-            user=db_settings['USER'],
-            password=db_settings['PASSWORD'],
-            db=db_settings['NAME'],
-            ssl={'ssl': {'tls': True}}
-        )
-        cur = db.cursor()
-        for par in li2:
-            c2=0
-            print(par)
-            v=0
-            v2=0
-            #par=li2[c]
-            query ="SELECT SUM(value) FROM main_data WHERE player_id in (16,17,18,19,20,21,22,23) and start_date = (%s) and parameter_id=(%s);"
-            value=(sd,par)
-            #print(i[0])
-            c1=cur.execute(query,value)
-            if c1!=0:
-                v=list(cur.fetchall())
-                v=v[0][0]
-                print(v)
-            else:
+        try:
+            li=[766,768,770,92,111,112,113,115,48,49,116]
+            li2=[781,782,783,772,773,775,776,777,778,779,780]
+            db = pymysql.connect(
+                host=db_settings['HOST'],
+                port=int(db_settings['PORT']),
+                user=db_settings['USER'],
+                password=db_settings['PASSWORD'],
+                db=db_settings['NAME'],
+                ssl={'ssl': {'tls': True}}
+            )
+            cur = db.cursor()
+            for par in li2:
+                c2=0
+                print(par)
                 v=0
-
-            
-            print("player = ",player)
-            query ="select value from main_data where player_id=(%s) and start_date=(%s) and parameter_id=(%s)"
-            value=(player,sd,par)
-            c1=cur.execute(query,value)
-            if c1!=0:
-                v2=list(cur.fetchall())
-                v2=v2[0][0]
-                print(v2)
-            else:
                 v2=0
-            val=(v2/v)*100
-#                 print(i[0],li2[c])
-            print(li[li2.index(par)]," = ",val)
-            if val!=0:
-                a="SELECT * from main_data WHERE player_id= '"+str(player)+"' AND start_date= '"+str(sd)+"'" + \
-                " AND parameter_id="+ '"' + str(li[li2.index(par)]) +'";' 
-                print(a)
-                row_exist = cur.execute(a)
-                print(row_exist)
-                if row_exist==0:
-                    query="insert into main_data(player_id,start_date,end_date,parameter_id,value,date_created,source,parametertree_id) values('"+str(player)+ "','"+str(sd)+"', '"+str(ed)+"','"+str(li[li2.index(par)])+"','"+str(val)+"', '"+str(date.today()) +"','"+'Benchmark_standz'+"','"+str(1)+"')"
-                    print(query)
-                    cur.execute(query)
-                    db.commit()
+                #par=li2[c]
+                query ="SELECT SUM(value) FROM main_data WHERE player_id in (16,17,18,19,20,21,22,23) and start_date = (%s) and parameter_id=(%s);"
+                value=(sd,par)
+                #print(i[0])
+                c1=cur.execute(query,value)
+                if c1!=0:
+                    v=list(cur.fetchall())
+                    v=v[0][0]
+                    print(v)
                 else:
-                    b="Update main_data set value='"+ str(val) +"' where player_id= '"+str(player)+"' AND start_date= '"+str(sd)+"'" +" AND parameter_id="+ '"' + str(li[li2.index(par)]) +'";'
-                    print(b)
-                    cur.execute(b)
-                    db.commit()
-        cur.close()
-        db.close()
+                    v=0
+
+                
+                print("player = ",player)
+                query ="select value from main_data where player_id=(%s) and start_date=(%s) and parameter_id=(%s)"
+                value=(player,sd,par)
+                c1=cur.execute(query,value)
+                if c1!=0:
+                    v2=list(cur.fetchall())
+                    v2=v2[0][0]
+                    print(v2)
+                else:
+                    v2=0
+                val=(v2/v)*100
+                print(li[li2.index(par)]," = ",val)
+                if val!=0:
+                    a="SELECT * from main_data WHERE player_id= '"+str(player)+"' AND start_date= '"+str(sd)+"'" + \
+                    " AND parameter_id="+ '"' + str(li[li2.index(par)]) +'";' 
+                    print(a)
+                    row_exist = cur.execute(a)
+                    print(row_exist)
+                    if row_exist==0:
+                        query="insert into main_data(player_id,start_date,end_date,parameter_id,value,date_created,source,parametertree_id) values('"+str(player)+ "','"+str(sd)+"', '"+str(ed)+"','"+str(li[li2.index(par)])+"','"+str(val)+"', '"+str(date.today()) +"','"+'Benchmark_standz'+"','"+str(1)+"')"
+                        print(query)
+                        cur.execute(query)
+                        db.commit()
+                    else:
+                        b="Update main_data set value='"+ str(val) +"' where player_id= '"+str(player)+"' AND start_date= '"+str(sd)+"'" +" AND parameter_id="+ '"' + str(li[li2.index(par)]) +'";'
+                        print(b)
+                        cur.execute(b)
+                        db.commit()
+            cur.close()
+            db.close()
+            print("OTTAudio Script:- OTTA finished")
+        except Exception as e:
+            print("OTTAudio Script:- Error in OTTA:- ", e)
 
     def calc_script_audio(self, pl_id, sd, ed,pr_sd,pr_ed,rep_ver_id):
-        calc_dict = {}
-        print(pl_id)
         try:
-            d = self.par_val_dict(pl_id, sd, ed)
-        except:
-            pass
-        try:
-            d_pr = self.par_val_dict(pl_id, pr_sd, pr_ed)
-        except:
-            pass
-        try:
-            calc_dict[35]=(d[34]/d[52])*100
-        except:
-            pass
-        try:
-            calc_dict[64]=d[52]-d_pr[52]
-        except:
-            pass
-        try:
-            calc_dict[24]=d[8]*d[2]
-        except:
-            pass
-        try:
-            calc_dict[128]=calc_dict[24]*d[34]*self.month_range(sd)
-        except:
-            pass
-        try:
-            calc_dict[110]=100-d[101]-d[103]
-        except:
-            pass
-        try:
-            calc_dict[67]=100-d[61]-d[63]
-        except:
-            pass
-        try:
-            calc_dict[169]=100-d[166]-d[167]-d[168]
-        except:
-            pass
-        try:
-            calc_dict[176]=100-d[175]-d[177]-d[178]
-        except:
-            pass
-        try:
-            calc_dict[181]=100-d[179]-d[180]
-        except:
-            pass
-        try:
-            calc_dict[184]=100-d[182]-d[183]
-        except:
-            pass
-        try:
-            calc_dict[189]=100-d[186]-d[187]-d[188]
-        except:
-            pass
-        try:
-            calc_dict[196]=100-d[195]-d[197]-d[198]
-        except:
-            pass
-        try:
-            calc_dict[171]=d[172]+d[173]
-        except:
-            pass
-        try:
-            calc_dict[174]=100-d[170]-calc_dict[171]
-        except:
-            pass
-        try:
-            calc_dict[191]=d[192]+d[193]
-        except:
-            pass
-        try:
-            calc_dict[194]=100-d[190]-calc_dict[191]
-        except:
-            pass
-        try:
-            calc_dict[770]=100-d[766]-d[768]
-        except:
-            pass
-        try:
-            calc_dict[154]=100-d[153]-d[152]
-        except:
-            pass
-        try:
-            calc_dict[764]=100-(d[748]+d[750]+d[754]+d[756]+d[758]+d[760]+d[762])#updated 25/01/23
-        except:
-            pass
-        try:
-            calc_dict[93]=d[6]*d[22] #updated 11/01/22
-        except:
-            pass
-        try:
-            calc_dict[75]=d[18]+calc_dict[93]
-        except:
-            pass
-        try:
-            calc_dict[3670]=(d[52]/d[1844])*100
-        except:
-            pass
-        try:
-            calc_dict[4786] = calc_dict[24] * d[52]
-        except:
-            pass
-        required_df=[]
-        for k in calc_dict:
-            if not calc_dict[k]:
-                continue
-            required_df.append({"player_id":pl_id,'start_date':str(sd),'end_date':str(ed),'parameter_id':k,'value':calc_dict[k],"date_created": str(date.today()),"source":'webforms_calc','parametertree_id':52,'report_version_id':rep_ver_id})
-        self.InsertORUpdate(required_df)
+            calc_dict = {}
+            print(pl_id)
+            try:
+                d = self.par_val_dict(pl_id, sd, ed)
+            except:
+                pass
+            try:
+                d_pr = self.par_val_dict(pl_id, pr_sd, pr_ed)
+            except:
+                pass
+            try:
+                calc_dict[35]=(d[34]/d[52])*100
+            except:
+                pass
+            try:
+                calc_dict[64]=d[52]-d_pr[52]
+            except:
+                pass
+            try:
+                calc_dict[24]=d[8]*d[2]
+            except:
+                pass
+            try:
+                calc_dict[128]=calc_dict[24]*d[34]*self.month_range(sd)
+            except:
+                pass
+            try:
+                calc_dict[110]=100-d[101]-d[103]
+            except:
+                pass
+            try:
+                calc_dict[67]=100-d[61]-d[63]
+            except:
+                pass
+            try:
+                calc_dict[169]=100-d[166]-d[167]-d[168]
+            except:
+                pass
+            try:
+                calc_dict[176]=100-d[175]-d[177]-d[178]
+            except:
+                pass
+            try:
+                calc_dict[181]=100-d[179]-d[180]
+            except:
+                pass
+            try:
+                calc_dict[184]=100-d[182]-d[183]
+            except:
+                pass
+            try:
+                calc_dict[189]=100-d[186]-d[187]-d[188]
+            except:
+                pass
+            try:
+                calc_dict[196]=100-d[195]-d[197]-d[198]
+            except:
+                pass
+            try:
+                calc_dict[171]=d[172]+d[173]
+            except:
+                pass
+            try:
+                calc_dict[174]=100-d[170]-calc_dict[171]
+            except:
+                pass
+            try:
+                calc_dict[191]=d[192]+d[193]
+            except:
+                pass
+            try:
+                calc_dict[194]=100-d[190]-calc_dict[191]
+            except:
+                pass
+            try:
+                calc_dict[770]=100-d[766]-d[768]
+            except:
+                pass
+            try:
+                calc_dict[154]=100-d[153]-d[152]
+            except:
+                pass
+            try:
+                calc_dict[764]=100-(d[748]+d[750]+d[754]+d[756]+d[758]+d[760]+d[762])#updated 25/01/23
+            except:
+                pass
+            try:
+                calc_dict[93]=d[6]*d[22] #updated 11/01/22
+            except:
+                pass
+            try:
+                calc_dict[75]=d[18]+calc_dict[93]
+            except:
+                pass
+            try:
+                calc_dict[3670]=(d[52]/d[1844])*100
+            except:
+                pass
+            try:
+                calc_dict[4786] = calc_dict[24] * d[52]
+            except:
+                pass
+            required_df=[]
+            for k in calc_dict:
+                if not calc_dict[k]:
+                    continue
+                required_df.append({"player_id":pl_id,'start_date':str(sd),'end_date':str(ed),'parameter_id':k,'value':calc_dict[k],"date_created": str(date.today()),"source":'webforms_calc','parametertree_id':52,'report_version_id':rep_ver_id})
+            self.InsertORUpdate(required_df)
+            print("OTTAudio Script:- calc_script_audio finished")
+        except Exception as e:
+            print("OTTAudio Script:- Error in calc_script_audio:- ", e)
 
     def report_version_id(self, rep_ver_id):
         print("OTTAudio Script:- calculate prapameter script started for report_version_id=", rep_ver_id)
