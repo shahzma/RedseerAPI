@@ -220,7 +220,7 @@ class CalculatedParamMobilityFn:
                                  'date_created': dt, 'source': 'weight_avg',
                                  'parametertree_id': 52, 'report_version_id': rep_ver_id}
                     required_rows.append(tuple(data_dict.values()))
-            cur.close()
+            cur.close()    
             self.InsertORUpdate(required_rows)
             print("Mobility Script:- WA_Calc finished")
         except Exception as e:
@@ -1337,12 +1337,14 @@ class CalculatedParamMobilityFn:
                 pass
             data_tuples = []
             for k in calc_dict:
-                if calc_dict[k] == 0:
+                if not calc_dict[k]:
                     continue
+                parameter_id, parameter_name = k.split(':')
+                parameter_id = int(parameter_id)
                 data_dict = {'player_id': pl_id, 'start_date': str(sd),
-                    'end_date': str(ed), 'parameter_id': k, 'value': calc_dict[
-                    k], 'date_created': date.today(), 'source': 'webforms_calc',
-                    'parametertree_id': 52, 'report_version_id': rep_ver_id}
+                    'end_date': str(ed), 'parameter_id': parameter_id, 'value':
+                    calc_dict[k], 'date_created': str(date.today()), 'source':
+                    'webforms_calc', 'parametertree_id': 52, 'report_version_id': rep_ver_id}
                 data_tuples.append(tuple(data_dict.values()))
             self.InsertORUpdate(data_tuples)
             WA_input_df = self.get_WA_sheet('Mobility')
@@ -1428,7 +1430,7 @@ class CalculatedParamMobilityFn:
                 pass
             data_tuples = []
             for k in calc_dict:
-                if calc_dict[k] == 0:
+                if not calc_dict[k]:
                     continue
                 parameter_id, parameter_name = k.split(':')
                 parameter_id = int(parameter_id)
@@ -1438,9 +1440,9 @@ class CalculatedParamMobilityFn:
                     'webforms_calc', 'parametertree_id': 52, 'report_version_id': rep_ver_id}
                 data_tuples.append(tuple(data_dict.values()))
             self.InsertORUpdate(data_tuples)
-            print('Mobility:- calc_script finished')
+            print('Mobility Script:- calc_script finished')
         except Exception as e:
-            print('Mobility:- Error in calc_script:- ', e)
+            print('Mobility Script:- Error in calc_script:- ', e)
 
 
     def report_version_id(self, rep_ver_id):
