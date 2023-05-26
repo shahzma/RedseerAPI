@@ -65,37 +65,8 @@ class CalculatedParamMobilityFn:
             return date(year, month - 1, pr_day[1])
         
     @staticmethod
-    def InsertORUpdate(dff):
-        db = pymysql.connect(
-            host=db_settings['HOST'],
-            port=int(db_settings['PORT']),
-            user=db_settings['USER'],
-            password=db_settings['PASSWORD'],
-            db=db_settings['NAME'],
-            ssl={'ssl': {'tls': True}}
-        )
-
-        cur = db.cursor()
+    def InsertORUpdate(data):
         try:
-            value_list=[tuple(df.values()) for df in dff]
-            query = """
-            INSERT INTO main_data (
-                player_id, start_date, end_date, parameter_id, value, date_created, source, parametertree_id, report_version_id
-            ) 
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) as value_list
-            ON DUPLICATE KEY UPDATE value = VALUES(value), date_created = VALUES(date_created), report_version_id = VALUES(report_version_id)
-            """
-            cur.executemany(query, value_list)
-            db.commit()
-            cur.close()
-            db.close()
-            print("Mobility Script:- InsertORUpdate finished")
-        except Exception as e:
-            print("Mobility Script:- Error in InsertORUpdate:- ", e)
-
-    @staticmethod
-    def par_val_dict(pl_id, sd, ed):
-        try: 
             db = pymysql.connect(
                 host=db_settings['HOST'],
                 port=int(db_settings['PORT']),
@@ -104,33 +75,45 @@ class CalculatedParamMobilityFn:
                 db=db_settings['NAME'],
                 ssl={'ssl': {'tls': True}}
             )
+
             cur = db.cursor()
-            
-            get_max_par = f"select max(parameter_id) from parameter;"
-            cur.execute(get_max_par)
-            max_par = cur.fetchall()
-            max_par = int(max_par[0][0]) + 1
-            # print(max_par)
-            
-            s = "select * from main_data where player_id='" + str(pl_id) + "' and start_date='" + str(
-                sd) + "' and end_date='" + str(ed) + "';"
+            query = """
+            INSERT INTO main_data (
+                player_id, start_date, end_date, parameter_id, value, date_created, source, parametertree_id, report_version_id
+            ) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) as value_list
+            ON DUPLICATE KEY UPDATE value = value_list.value, date_created = value_list.date_created, report_version_id = value_list.report_version_id
+            """
+            cur.executemany(query, data)
+            db.commit()
+            print("Mobility Script:- InsertORUpdate finished")
+        except Exception as e:
+            print("Mobility Script:- Error in InsertORUpdate:- ", e)
+
+    @staticmethod
+    def par_val_dict(pl_id, sd, ed, db, id_name_dict):
+        try:
+            cur = db.cursor()
+            s = "select * from main_data where player_id='" + str(pl_id
+                                                                  ) + "' and start_date='" + str(sd) + "' and end_date='" + str(ed
+                                                                                                                                ) + "';"
             cur.execute(s)
             d = cur.fetchall()
-            cur.close()
             dat = pd.DataFrame.from_dict(d)
             dat = dat[[4, 5]]
-            # date=date.drop_duplicates(subset={2,3})
-            dat = dat.rename(columns={4: 'par_id', 5: 'val'})
+            dat = dat.rename(columns={(4): 'par_id', (5): 'val'})
             ans = zip(dat.par_id, dat.val)
             ans = dict(ans)
-            # print(ans)
-            for i in range(1, max_par):
+            cur.close()
+            input_dict = {}
+            for i in id_name_dict:
                 try:
                     ans[i]
+                    input_dict[id_name_dict[i]] = ans[i]
                 except:
-                    ans[i] = None
+                    input_dict[id_name_dict[i]] = None
             print("Mobility Script:- par_val_dict finished")
-            return ans
+            return input_dict
         except Exception as e:
             print("Mobility Script:- Error in par_val_dict:- ", e)
     
@@ -158,15 +141,23 @@ class CalculatedParamMobilityFn:
 
     #Defining func for WA sheet
     
-    def upload_resumable2(self):
-        # Creating a public client app, Aquire an access token for the user and set the header for API calls
-        cognos_to_onedrive = msal.PublicClientApplication(self.CLIENT_ID, authority=self.AUTHORITY_URL)
-        token = cognos_to_onedrive.acquire_token_by_username_password(self.USERNAME,self.PASSWORD,self.SCOPES)
-        header = {'Authorization': 'Bearer {}'.format(token['access_token'])}
-        # download 
-        response = requests.get('{}/{}/me/drive/root:/Product Data Excels (Do not Touch)/Calculated_parameter_sheets'.format(self.RESOURCE_URL,self.API_VERSION) + '/' + self.file_name + ':/content', headers=header)
-
-        return response.content
+    def upload_resumable2(self, file_name):
+        try:
+            # Creating a public client app, Aquire an access token for the user and set the header for API calls
+            cognos_to_onedrive = msal.PublicClientApplication(self.CLIENT_ID, authority=self.AUTHORITY_URL)
+            token = cognos_to_onedrive.acquire_token_by_username_password(self.USERNAME,self.PASSWORD,self.SCOPES)
+            header = {'Authorization': 'Bearer {}'.format(token['access_token'])}
+            # download 
+            response = requests.get(
+                    '{}/{}/me/drive/root:/Product Data Excels (Do not Touch)/Calculated_parameter_sheets'
+                    .format(self.RESOURCE_URL, self.API_VERSION) + '/' + file_name + ':/content',
+                    headers=header)
+            
+            
+            print("Mobility Script:- upload_resumable2 finished")
+            return response.content
+        except Exception as e:
+            print("Mobility Script:- Error in upload_resumable2:- ", e)
 
 
 
@@ -181,74 +172,63 @@ class CalculatedParamMobilityFn:
     
 
     
-    def WA_Calc(self,pl,sd,ed,rep_ver_id):
+    def WA_Calc(self, player_id, df, sd, ed, db, rep_ver_id):
         try:
-            yls=self.upload_resumable2()
-            df=pd.read_excel(yls,"OTT Audio", header=None, index_col=False)
-            required_df=[]
-            dt=pd.Timestamp.today().date()
-            dt=str(dt)
-            db = pymysql.connect(
-                host=db_settings['HOST'],
-                port=int(db_settings['PORT']),
-                user=db_settings['USER'],
-                password=db_settings['PASSWORD'],
-                db=db_settings['NAME'],
-                ssl={'ssl': {'tls': True}}
-            )
+            required_rows = []
+            dt = pd.Timestamp.today().date()
+            dt = str(dt)
             cur = db.cursor()
-
-            # print(df)
-            # print("player = ", pl)
-            for k in range(1,len(df)):
-                par_id=df.iloc[k,0]
-                if str(par_id)=='nan':
-                    continue 
-                # print(par_id)
-                par1=df.iloc[k,4]
-                par2=df.iloc[k,5]
-                par3=df.iloc[k,6]
-                A="SELECT value from main_data WHERE player_id= '"+str(pl)+"' AND start_date= '"+str(sd)+"'"+ \
-                "AND parameter_id='"+str(par1)+"';"
+            print('player = ', player_id)
+            for k in range(1, len(df)):
+                par_id = df.iloc[k, 0]
+                if str(par_id) == 'nan':
+                    continue
+                par1 = df.iloc[k, 4]
+                par2 = df.iloc[k, 5]
+                par3 = df.iloc[k, 6]
+                A = "SELECT value from main_data WHERE player_id= '" + str(player_id
+                                                                           ) + "' AND start_date= '" + str(sd
+                                                                                                           ) + "'" + " AND end_date='" + str(ed
+                                                                                                                                             ) + "'" + " AND parameter_id='" + str(par1) + "';"
                 cur.execute(A)
-                to=cur.fetchall()
-                to=pd.DataFrame.from_dict(to)
-                par_1=0
-                par_2=0
-                if len(to)!=0:
-                    par_1=to.iat[0,0]
-                if str(par2)=='no_days':
-                    par_2=self.month_range(str(sd))
+                to = cur.fetchall()
+                to = pd.DataFrame.from_dict(to)
+                par_1 = 0
+                par_2 = 0
+                if len(to) != 0:
+                    par_1 = to.iat[0, 0]
+                if str(par2) == 'no_days':
+                    par_2 = self.month_range(str(sd))
                 else:
-                    B="SELECT value from main_data WHERE player_id= '"+str(pl)+"' AND start_date= '"+str(sd)+"'"+ \
-                    "AND parameter_id='"+str(par2)+"';"
+                    B = "SELECT value from main_data WHERE player_id= '" + str(
+                        player_id) + "' AND start_date= '" + str(sd
+                                                                 ) + "'" + " AND end_date='" + str(ed
+                                                                                                   ) + "'" + " AND parameter_id='" + str(par2) + "';"
                     cur.execute(B)
-                    to=cur.fetchall()
-                    to=pd.DataFrame.from_dict(to)
-                    if len(to)!=0:
-                        par_2=to.iat[0,0]
-                if str(par3)=='nan':
-                    val=par_1*par_2
-                    # print(par_id,par3)
+                    to = cur.fetchall()
+                    to = pd.DataFrame.from_dict(to)
+                    if len(to) != 0:
+                        par_2 = to.iat[0, 0]
+                if str(par3) == 'nan':
+                    val = par_1 * par_2
                 else:
-                    val=par_1*par_2
-                    val=val/100
-                if val!=0:
-                    # print(val)
-                    required_df.append({"player_id":pl,'start_date':sd,'end_date':ed,'parameter_id':par_id,'value':val,"date_created":dt,"source":'weight_avg','parametertree_id':52,'report_version_id':rep_ver_id})    
-            self.InsertORUpdate(required_df)
+                    val = par_1 * par_2
+                    val = val / 100
+                if val != 0:
+                    data_dict = {'player_id': player_id, 'start_date': sd,
+                                 'end_date': ed, 'parameter_id': par_id, 'value': val,
+                                 'date_created': dt, 'source': 'weight_avg',
+                                 'parametertree_id': 52, 'report_version_id': rep_ver_id}
+                    required_rows.append(tuple(data_dict.values()))
             cur.close()
-            db.close()
+            self.InsertORUpdate(required_rows)
             print("Mobility Script:- WA_Calc finished")
         except Exception as e:
             print("Mobility Script:- Error in WA_Calc:- ", e)
 
     def get_WA_sheet(self, sheet_name):
         try:
-            file_name2 = 'Weighted Average Parameters - Benchmarks Sectors.xlsx'
-            conflict_resolve = {'item': {'@microsoft.graph.conflictBehavior':
-                                         'replace'}}
-            yls2 = self.upload_resumable2(file_name2)
+            yls2 = self.upload_resumable2(self.file_name)
             WA_input_df = pd.read_excel(
                 yls2, sheet_name, header=None, index_col=False)
             print("Mobility Script:- get_WA_sheet finished")
@@ -1364,7 +1344,7 @@ class CalculatedParamMobilityFn:
                     k], 'date_created': date.today(), 'source': 'webforms_calc',
                     'parametertree_id': 52}
                 data_tuples.append(tuple(data_dict.values()))
-            self.InsertORUpdate(data_tuples, db)
+            self.InsertORUpdate(data_tuples)
             WA_input_df = self.get_WA_sheet('Mobility')
             self.WA_Calc(pl_id, WA_input_df, sd, ed, db)
             d = self.par_val_dict(pl_id, sd, ed, db, id_name_dict)
@@ -1457,7 +1437,7 @@ class CalculatedParamMobilityFn:
                     calc_dict[k], 'date_created': str(date.today()), 'source':
                     'webforms_calc', 'parametertree_id': 52, 'report_version_id': rep_ver_id}
                 data_tuples.append(tuple(data_dict.values()))
-            self.InsertORUpdate(data_tuples, db)
+            self.InsertORUpdate(data_tuples)
             print('Mobility:- calc_script finished')
         except Exception as e:
             print('Mobility:- Error in calc_script:- ', e)
