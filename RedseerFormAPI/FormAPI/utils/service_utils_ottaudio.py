@@ -87,7 +87,6 @@ class CalculatedParamOTTAudioFn:
             """
             cur.executemany(query, value_list)
             db.commit()
-            print("Done")
             cur.close()
             db.close()
             print("OTTAudio Script:- InsertORUpdate finished")
@@ -96,39 +95,44 @@ class CalculatedParamOTTAudioFn:
 
     @staticmethod
     def par_val_dict(pl_id, sd, ed):
-        db = pymysql.connect(
-            host=db_settings['HOST'],
-            port=int(db_settings['PORT']),
-            user=db_settings['USER'],
-            password=db_settings['PASSWORD'],
-            db=db_settings['NAME'],
-            ssl={'ssl': {'tls': True}}
-        )
-        get_max_par = f"select max(parameter_id) from parameter;"
-        cur.execute(get_max_par)
-        max_par = cur.fetchall()
-        max_par = int(max_par[0][0]) + 1
-        print(max_par)
-
-        cur = db.cursor()
-        s = "select * from main_data where player_id='" + str(pl_id) + "' and start_date='" + str(
-            sd) + "' and end_date='" + str(ed) + "';"
-        cur.execute(s)
-        d = cur.fetchall()
-        cur.close()
-        dat = pd.DataFrame.from_dict(d)
-        dat = dat[[4, 5]]
-        # date=date.drop_duplicates(subset={2,3})
-        dat = dat.rename(columns={4: 'par_id', 5: 'val'})
-        ans = zip(dat.par_id, dat.val)
-        ans = dict(ans)
-        print(ans)
-        for i in range(1, max_par):
-            try:
-                ans[i]
-            except:
-                ans[i] = None
-        return ans
+        try: 
+            db = pymysql.connect(
+                host=db_settings['HOST'],
+                port=int(db_settings['PORT']),
+                user=db_settings['USER'],
+                password=db_settings['PASSWORD'],
+                db=db_settings['NAME'],
+                ssl={'ssl': {'tls': True}}
+            )
+            cur = db.cursor()
+            
+            get_max_par = f"select max(parameter_id) from parameter;"
+            cur.execute(get_max_par)
+            max_par = cur.fetchall()
+            max_par = int(max_par[0][0]) + 1
+            # print(max_par)
+            
+            s = "select * from main_data where player_id='" + str(pl_id) + "' and start_date='" + str(
+                sd) + "' and end_date='" + str(ed) + "';"
+            cur.execute(s)
+            d = cur.fetchall()
+            cur.close()
+            dat = pd.DataFrame.from_dict(d)
+            dat = dat[[4, 5]]
+            # date=date.drop_duplicates(subset={2,3})
+            dat = dat.rename(columns={4: 'par_id', 5: 'val'})
+            ans = zip(dat.par_id, dat.val)
+            ans = dict(ans)
+            # print(ans)
+            for i in range(1, max_par):
+                try:
+                    ans[i]
+                except:
+                    ans[i] = None
+            print("OTTAudio Script:- par_val_dict finished")
+            return ans
+        except Exception as e:
+            print("OTTAudio Script:- Error in par_val_dict:- ", e)
     
     @staticmethod
     def reset_calc_dict():
@@ -191,13 +195,13 @@ class CalculatedParamOTTAudioFn:
             )
             cur = db.cursor()
 
-            print(df)
-            print("player = ", pl)
+            # print(df)
+            # print("player = ", pl)
             for k in range(1,len(df)):
                 par_id=df.iloc[k,0]
                 if str(par_id)=='nan':
                     continue 
-                print(par_id)
+                # print(par_id)
                 par1=df.iloc[k,4]
                 par2=df.iloc[k,5]
                 par3=df.iloc[k,6]
@@ -222,12 +226,12 @@ class CalculatedParamOTTAudioFn:
                         par_2=to.iat[0,0]
                 if str(par3)=='nan':
                     val=par_1*par_2
-                    print(par_id,par3)
+                    # print(par_id,par3)
                 else:
                     val=par_1*par_2
                     val=val/100
                 if val!=0:
-                    print(val)
+                    # print(val)
                     required_df.append({"player_id":pl,'start_date':sd,'end_date':ed,'parameter_id':par_id,'value':val,"date_created":dt,"source":'weight_avg','parametertree_id':52,'report_version_id':rep_ver_id})    
             self.InsertORUpdate(required_df)
             cur.close()
@@ -252,7 +256,7 @@ class CalculatedParamOTTAudioFn:
             cur = db.cursor()
             for par in li2:
                 c2=0
-                print(par)
+                # print(par)
                 v=0
                 v2=0
                 #par=li2[c]
@@ -263,37 +267,37 @@ class CalculatedParamOTTAudioFn:
                 if c1!=0:
                     v=list(cur.fetchall())
                     v=v[0][0]
-                    print(v)
+                    # print(v)
                 else:
                     v=0
 
                 
-                print("player = ",player)
+                # print("player = ",player)
                 query ="select value from main_data where player_id=(%s) and start_date=(%s) and parameter_id=(%s)"
                 value=(player,sd,par)
                 c1=cur.execute(query,value)
                 if c1!=0:
                     v2=list(cur.fetchall())
                     v2=v2[0][0]
-                    print(v2)
+                    # print(v2)
                 else:
                     v2=0
                 val=(v2/v)*100
-                print(li[li2.index(par)]," = ",val)
+                # print(li[li2.index(par)]," = ",val)
                 if val!=0:
                     a="SELECT * from main_data WHERE player_id= '"+str(player)+"' AND start_date= '"+str(sd)+"'" + \
                     " AND parameter_id="+ '"' + str(li[li2.index(par)]) +'";' 
-                    print(a)
+                    # print(a)
                     row_exist = cur.execute(a)
-                    print(row_exist)
+                    # print(row_exist)
                     if row_exist==0:
                         query="insert into main_data(player_id,start_date,end_date,parameter_id,value,date_created,source,parametertree_id) values('"+str(player)+ "','"+str(sd)+"', '"+str(ed)+"','"+str(li[li2.index(par)])+"','"+str(val)+"', '"+str(date.today()) +"','"+'Benchmark_standz'+"','"+str(1)+"')"
-                        print(query)
+                        # print(query)
                         cur.execute(query)
                         db.commit()
                     else:
                         b="Update main_data set value='"+ str(val) +"' where player_id= '"+str(player)+"' AND start_date= '"+str(sd)+"'" +" AND parameter_id="+ '"' + str(li[li2.index(par)]) +'";'
-                        print(b)
+                        # print(b)
                         cur.execute(b)
                         db.commit()
             cur.close()
@@ -305,7 +309,7 @@ class CalculatedParamOTTAudioFn:
     def calc_script_audio(self, pl_id, sd, ed,pr_sd,pr_ed,rep_ver_id):
         try:
             calc_dict = {}
-            print(pl_id)
+            # print(pl_id)
             try:
                 d = self.par_val_dict(pl_id, sd, ed)
             except:
@@ -431,14 +435,14 @@ class CalculatedParamOTTAudioFn:
             query='select distinct player_id,start_date,end_date from main_data where report_version_id=(%s);'
             cur.execute(query,rep_ver_id)
             par = cur.fetchall()
-            print(cur.fetchall())
+            # print(cur.fetchall())
             
             pl=par[0][0]
             sd=str(par[0][1])
             ed=str(par[0][2])
             p_sd=self.pr_sd(par[0][1])
             p_ed=self.pr_ed(par[0][2])
-            print(p_sd)
+            # print(p_sd)
             self.calc_script_audio(pl,sd,ed,str(p_sd),str(p_ed),rep_ver_id)
             self.WA_Calc(pl,sd,ed,rep_ver_id)
             self.OTTA(pl,sd,ed)
