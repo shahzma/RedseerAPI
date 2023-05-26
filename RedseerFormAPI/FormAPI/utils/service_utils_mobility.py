@@ -1342,11 +1342,11 @@ class CalculatedParamMobilityFn:
                 data_dict = {'player_id': pl_id, 'start_date': str(sd),
                     'end_date': str(ed), 'parameter_id': k, 'value': calc_dict[
                     k], 'date_created': date.today(), 'source': 'webforms_calc',
-                    'parametertree_id': 52}
+                    'parametertree_id': 52, 'report_version_id': rep_ver_id}
                 data_tuples.append(tuple(data_dict.values()))
             self.InsertORUpdate(data_tuples)
             WA_input_df = self.get_WA_sheet('Mobility')
-            self.WA_Calc(pl_id, WA_input_df, sd, ed, db)
+            self.WA_Calc(pl_id, WA_input_df, sd, ed, db, rep_ver_id)
             d = self.par_val_dict(pl_id, sd, ed, db, id_name_dict)
             calc_dict = self.reset_calc_dict(id_name_dict)
             try:
