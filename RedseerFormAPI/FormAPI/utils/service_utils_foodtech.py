@@ -104,14 +104,14 @@ class CalculatedParamFoodtechFn:
         except Exception as e:
             print("Foodtech:- Error in upload_resumable2:- ", e)
 
-    def get_WA_sheet(self):
+    def get_WA_sheet(self, sheet_name):
         try:
             file_name2 = 'Weighted Average Parameters - Benchmarks Sectors.xlsx'
             conflict_resolve = {'item': {'@microsoft.graph.conflictBehavior':
                                          'replace'}}
             yls2 = self.upload_resumable2(file_name2)
             WA_input_df = pd.read_excel(
-                yls2, 'Food', header=None, index_col=False)
+                yls2, sheet_name, header=None, index_col=False)
             print("Foodtech:- get_WA_sheet finished")
             return WA_input_df
         except Exception as e:
@@ -779,7 +779,7 @@ class CalculatedParamFoodtechFn:
             ed = str(data_df['end_date'].unique()[0])
             cur.close()
             self.calc_script(player_id, sd, ed, db, id_name_dict, rep_ver_id)
-            WA_input_df = self.get_WA_sheet()
+            WA_input_df = self.get_WA_sheet('Food')
             self.WA_Calc(player_id, WA_input_df, sd, ed, db, rep_ver_id)
             self.calc1(player_id, sd, ed, db, rep_ver_id)
             self.calc2(player_id, sd, ed, db, rep_ver_id)

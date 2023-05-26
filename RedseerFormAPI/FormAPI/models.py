@@ -15,6 +15,7 @@ from FormAPI.utils.powerbi_refresh import PowerbiRefresh
 from .utils.service_utils import CalculatedParamFn
 from .utils.service_utils_foodtech import CalculatedParamFoodtechFn
 from .utils.service_utils_ottaudio import CalculatedParamOTTAudioFn
+from .utils.service_utils_mobility import CalculatedParamMobilityFn
 import calendar
 import datetime
 import requests
@@ -430,6 +431,7 @@ def refresh_power_bi(sender, instance, created, **kwargs):
                 tmp = CalculatedParamFn()
                 tmpFoodtech = CalculatedParamFoodtechFn()
                 tmpOTTAudio = CalculatedParamOTTAudioFn()
+                tmpMobility = CalculatedParamMobilityFn()
                 if report_id == 14:
                     tmpFoodtech.report_version_id(instance.id)
                 if report_id == 45:
@@ -465,7 +467,7 @@ def refresh_power_bi(sender, instance, created, **kwargs):
                 if report_id == 28:
                     tmp.calc_script_edtech(player_id, start_date, end_date)
                 if report_id == 43:
-                    tmp.calc_script_mobility(player_id, start_date, end_date)
+                    tmpMobility.report_version_id(instance.id)
                 if report_id == 19:
                     tmp.calc_script_horizontals(
                         player_id, start_date, end_date)
