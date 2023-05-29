@@ -137,7 +137,7 @@ class Player(models.Model):
         Industry, models.DO_NOTHING, blank=True, null=True)  # is called industry
     excel_link = models.CharField(max_length=2000)
     last_date_day = models.IntegerField(default=28, blank=True, null=True)
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=False)
 
     class Meta:
         managed = False

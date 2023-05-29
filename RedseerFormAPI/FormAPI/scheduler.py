@@ -82,8 +82,8 @@ def start():
         datetime.now().year, datetime.now().month)[1]
     scheduler.add_job(
         pre_release_forms_job,
-        trigger=CronTrigger(day=last_day_of_month-1, month='1-12',
-                            hour=4, minute=30, timezone=pytz.utc),  # 16:00 IST
+        trigger=CronTrigger(day=last_day_of_month-2, month='1-12',
+                            hour=12, minute=55, timezone=pytz.utc),  # 10:00 IST
         id=preReleaseFormsJobId
     )
 

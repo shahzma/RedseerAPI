@@ -51,9 +51,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -191,5 +191,8 @@ if not EMAIL_HOST_PASSWORD:
 
 EMAIL_USE_TLS = (os.getenv('EMAIL_USE_TLS', 'True') == 'True')
 print("EMAIL_USE_TLS =", EMAIL_USE_TLS)
+
+MAIL_SUBJECT_SUFFIX = " - Test Environment" if os.getenv(
+            "MY_APP_ENV") == "test" else ""
 
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
