@@ -111,7 +111,7 @@ class CalculatedParamMobilityFn:
                     ans[i]
                     input_dict[id_name_dict[i]] = ans[i]
                 except:
-                    input_dict[id_name_dict[i]] = None
+                    input_dict[id_name_dict[i]] = 0
             print("Mobility Script:- par_val_dict finished")
             return input_dict
         except Exception as e:
@@ -238,7 +238,7 @@ class CalculatedParamMobilityFn:
 
     def calc_script(self, pl_id, sd, ed, db, id_name_dict, rep_ver_id):
         try:
-            calc_dict = self.reset_calc_dict(id_name_dict)
+            calc_dict = {}
             d = self.par_val_dict(pl_id, sd, ed, db, id_name_dict)
             try:
                 calc_dict['1971:Total(Mn)'] = d['1972:Cab Total(Mn)'] + d[
@@ -295,51 +295,93 @@ class CalculatedParamMobilityFn:
                     '2001:Play(%)'] != 0:
                     calc_dict['2002:SUV(%)'] = 100 - d['1999:Mini(%)'] - d[
                         '2000:Prime(%)'] - d['2001:Play(%)']
+            except:
+                pass
+            try:
                 if d['2008:Mini(%)'] != 0 or d['2009:Prime(%)'] != 0 or d[
                     '2010:Play(%)'] != 0:
                     calc_dict['2011:SUV(%)'] = 100 - d['2008:Mini(%)'] - d[
                         '2009:Prime(%)'] - d['2010:Play(%)']
+            except:
+                pass
+            try:
                 if d['2017:Mini(%)'] != 0 and d['2018:Prime(%)'] != 0 and d[
                     '2019:Play(%)'] != 0:
                     calc_dict['2020:SUV(%)'] = 100 - d['2017:Mini(%)'] - d[
                         '2018:Prime(%)'] - d['2019:Play(%)']
+            except:
+                pass
+            try:
                 if d['2026:Mini(%)'] != 0 and d['2027:Prime(%)'] != 0 and d[
                     '2028:Play(%)'] != 0:
                     calc_dict['2029:SUV(%)'] = 100 - d['2026:Mini(%)'] - d[
                         '2027:Prime(%)'] - d['2028:Play(%)']
+            except:
+                pass
+            try:
                 if d['2035:Mini(%)'] != 0 and d['2036:Prime(%)'] != 0 and d[
                     '2037:Play(%)'] != 0:
                     calc_dict['2038:SUV(%)'] = 100 - d['2035:Mini(%)'] - d[
                         '2036:Prime(%)'] - d['2037:Play(%)']
+            except:
+                pass
+            try:
                 if d['2044:Mini(%)'] != 0 and d['2045:Prime(%)'] != 0 and d[
                     '2046:Play(%)'] != 0:
                     calc_dict['2047:SUV(%)'] = 100 - d['2044:Mini(%)'] - d[
                         '2045:Prime(%)'] - d['2046:Play(%)']
+            except:
+                pass
+            try:
                 if d['2053:Mini(%)'] != 0 and d['2054:Prime(%)'] != 0 and d[
                     '2055:Play(%)'] != 0:
                     calc_dict['2056:SUV(%)'] = 100 - d['2053:Mini(%)'] - d[
                         '2054:Prime(%)'] - d['2055:Play(%)']
+            except:
+                pass
+            try:
                 if d['1995:P2P(Mn)'] != 0 and d['1996:Outstation(Mn)'] != 0:
                     calc_dict['1997:Rental(Mn)'] = d['1994:Delhi NCR(Mn)'] - d[
                         '1995:P2P(Mn)'] - d['1996:Outstation(Mn)']
+            except:
+                pass
+            try:
                 if d['2004:P2P(Mn)'] != 0 and d['2005:Outstation(Mn)'] != 0:
                     calc_dict['2006:Rental(Mn)'] = d['2003:Mumbai(Mn)'] - d[
                         '2004:P2P(Mn)'] - d['2005:Outstation(Mn)']
+            except:
+                pass
+            try:
                 if d['2013:P2P(Mn)'] != 0 and d['2014:Outstation(Mn)'] != 0:
                     calc_dict['2015:Rental(Mn)'] = d['2012:Bangalore(Mn)'] - d[
                         '2013:P2P(Mn)'] - d['2014:Outstation(Mn)']
+            except:
+                pass
+            try:
                 if d['2022:P2P(Mn)'] != 0 and d['2023:Outstation(Mn)'] != 0:
                     calc_dict['2024:Rental(Mn)'] = d['2021:Kolkata(Mn)'] - d[
                         '2022:P2P(Mn)'] - d['2023:Outstation(Mn)']
+            except:
+                pass
+            try:
                 if d['2031:P2P(Mn)'] != 0 and d['2032:Outstation(Mn)'] != 0:
                     calc_dict['2033:Rental(Mn)'] = d['2030:Hyderabad(Mn)'] - d[
                         '2031:P2P(Mn)'] - d['2032:Outstation(Mn)']
+            except:
+                pass
+            try:
                 if d['2040:P2P(Mn)'] != 0 and d['2041:Outstation(Mn)'] != 0:
                     calc_dict['2042:Rental(Mn)'] = d['2039:Chennai(Mn)'] - d[
                         '2040:P2P(Mn)'] - d['2041:Outstation(Mn)']
+            except:
+                pass
+            try:
                 if d['2049:P2P(Mn)'] != 0 and d['2050:Outstation(Mn)'] != 0:
                     calc_dict['2051:Rental(Mn)'] = d['2048:Pune(Mn)'] - d[
                         '2049:P2P(Mn)'] - d['2050:Outstation(Mn)']
+            except:
+                pass
+            try:
                 calc_dict['2069:Rest of India(Mn)'] = d['1972:Cab Total(Mn)'] - (
                     d['2057:Lucknow(Mn)'] + d['2058:Jaipur(Mn)'] + d[
                     '2059:Chandigarh(Mn)'] + d['2060:Ahmedabad(Mn)'] + d[
@@ -351,6 +393,9 @@ class CalculatedParamMobilityFn:
                     '2012:Bangalore(Mn)'] + d['2021:Kolkata(Mn)'] + d[
                     '2030:Hyderabad(Mn)'] + d['2039:Chennai(Mn)'] + d[
                     '2048:Pune(Mn)'])
+            except:
+                pass
+            try:
                 calc_dict['2083:Rest of India(Mn)'] = d['2070:Auto Total(Mn)'] - (
                     d['2071:Delhi NCR(Mn)'] + d['2072:Mumbai(Mn)'] + d[
                     '2073:Bangalore(Mn)'] + d['2074:Kolkata(Mn)'] + d[
@@ -358,6 +403,9 @@ class CalculatedParamMobilityFn:
                     '2077:Pune(Mn)'] + d['2078:Jaipur(Mn)'] + d[
                     '2079:Ahmedabad(Mn)'] + d['2080:Vijayawada(Mn)'] + d[
                     '2081:Tiruchirapalli(Mn)'] + d['2082:Indore(Mn)'])
+            except:
+                pass
+            try:
                 calc_dict['2114:Rest of India(Mn)'] = d['2084:Moto Total(Mn)'] - (
                     d['2085:Delhi NCR(Mn)'] + d['2086:Mumbai(Mn)'] + d[
                     '2087:Bangalore(Mn)'] + d['2088:Chennai(Mn)'] + d[
@@ -374,6 +422,9 @@ class CalculatedParamMobilityFn:
                     '2109:Madurai(Mn)'] + d['2110:Kota(Mn)'] + d[
                     '2111:Jodhpur(Mn)'] + d['2112:Guntur(Mn)'] + d[
                     '2113:Jalandhar(Mn)'])
+            except:
+                pass
+            try:
                 calc_dict['2115:Total(USD Mn)'] = d['2116:Cab Total(USD Mn)'] + d[
                     '2214:Auto Total(USD Mn)'] + d['2228:Moto Total(USD Mn)']
             except:
@@ -1350,7 +1401,7 @@ class CalculatedParamMobilityFn:
             WA_input_df = self.get_WA_sheet('Mobility')
             self.WA_Calc(pl_id, WA_input_df, sd, ed, db, rep_ver_id)
             d = self.par_val_dict(pl_id, sd, ed, db, id_name_dict)
-            calc_dict = self.reset_calc_dict(id_name_dict)
+            calc_dict = {}
             try:
                 calc_dict['3681:Mini(Mn)'] = d['1979:Mini(Mn)'] - (d[
                     '3263:Mini'] + d['3267:Mini'] + d['3271:Mini'] + d[

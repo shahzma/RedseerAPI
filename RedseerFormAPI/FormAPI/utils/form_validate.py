@@ -60,8 +60,9 @@ class ValidateForm:
                     std_last_12_months
 
                 # threshold_2 -> % change from last_month to reference month for the previous year
-                del_change_t1 = value_df[value_df["start_date"] == previous_year_date]["pct_change"].iloc[0]
-                dev_tolerance = 0.12
+                del_change_t1 = value_df[(value_df["month"] == reference_date.month) & (value_df["year"] != reference_date.year)]["pct_change"].mean()
+                # del_change_t1 = value_df[value_df["start_date"] == previous_year_date]["pct_change"].iloc[0]
+                dev_tolerance = 0.1
                 threshold_2_UB = del_change_t1 + dev_tolerance
                 threshold_2_LB = del_change_t1 - dev_tolerance
                 boolean_exp_1 = (ref_month_change > threshold_1_UB) or (ref_month_change < threshold_1_LB)
@@ -92,7 +93,7 @@ class ValidateForm:
                         Seasonality_anomaly = "No"
 
                 current_row = {"player_id": player_id, "parameter_id": parameter_id, "ref_date": reference_date, "value": ref_mon_value, "Self_trend_anomaly": Self_trend_anomaly,
-                               "Seasonality_anomaly": Seasonality_anomaly}
+                               }
                 AP_df_rows.append(current_row)
 
             except Exception as e:
@@ -108,8 +109,7 @@ class ValidateForm:
         for key, value_df in Anomaly_Prediction_df.groupby("parameter_id"):
             try:
                 parameter_id = key
-                indicative_state = (value_df["Self_trend_anomaly"].iloc[0] == "Yes") or (
-                    value_df["Seasonality_anomaly"].iloc[0] == "Yes")
+                indicative_state = (value_df["Self_trend_anomaly"].iloc[0] == "Yes")
 
                 # if the label is "Potential Anomaly", then calculate the number of corr_params which have the "Anomaly_state" = "Potential Anomaly"
                 # No need if the Anomaly_Prediction_df is already filtered for "Potential Anomaly" state
@@ -119,7 +119,7 @@ class ValidateForm:
                         corr_df["parameter_id"] == parameter_id)]["corr_param_id"]
                     total_corr_params = len(corr_params_series)
                     anomaly_state_count = len(Anomaly_Prediction_df[(Anomaly_Prediction_df["parameter_id"].isin(corr_params_series)) and (
-                        (Anomaly_Prediction_df["Self_trend_anomaly"] == "Yes") or (Anomaly_Prediction_df["Seasonality_anomaly"] == "Yes"))])
+                        (Anomaly_Prediction_df["Self_trend_anomaly"] == "Yes"))])
                     corr_anomaly_fraction = anomaly_state_count/total_corr_params
                     if corr_anomaly_fraction > 0.6:
                         Actual_Observed_Anomaly.append("Yes")
@@ -135,9 +135,9 @@ class ValidateForm:
 
         Anomaly_Prediction_df["Actual_Observed_Anomaly"] = Actual_Observed_Anomaly
         Anomaly_Prediction_df = Anomaly_Prediction_df[['player_id', 'player_name', 'parameter_id', 'ref_date', 'value',
-                                                       'parameter_name', 'parent_parameter', 'Self_trend_anomaly', 'Seasonality_anomaly', 'Actual_Observed_Anomaly']]
+                                                       'parameter_name', 'parent_parameter', 'Self_trend_anomaly', 'Actual_Observed_Anomaly']]
         Anomaly_Prediction_df['anomaly_warnings'] = Anomaly_Prediction_df[[
-            'Self_trend_anomaly', 'Seasonality_anomaly', 'Actual_Observed_Anomaly']].apply(lambda x: self.warning(x), axis=1)
+            'Self_trend_anomaly', 'Actual_Observed_Anomaly']].apply(lambda x: self.warning(x), axis=1)
         return Anomaly_Prediction_df
 
     def warning(self, df_row):
@@ -147,10 +147,10 @@ class ValidateForm:
             i += 1
             warning += str(i) + ") The current month change in parameter value deviates from its last 12 month trend"
             warning += "\n"
-        if df_row['Seasonality_anomaly'] == "Yes":
+        """ if df_row['Seasonality_anomaly'] == "Yes":
             i += 1
             warning += str(i) + ") The MoM change in parameter value significantly deviates from that for the previous year"
-            warning += "\n"
+            warning += "\n" """
         if df_row['Actual_Observed_Anomaly'] == "Yes":
             i += 1
             warning += str(i) + ") It seems many strongly correlated parameters have also changed in line with their direction of correlation"
