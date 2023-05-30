@@ -1496,7 +1496,7 @@ class CalculatedParamMobilityFn:
             print('Mobility Script:- Error in calc_script:- ', e)
 
 
-    def report_version_id(self, rep_ver_id):
+    def report_version_id(self, rep_ver_id, callback):
         print("Mobility Script:- calculate prapameter script started for report_version_id=", rep_ver_id)
         try:
             db = pymysql.connect(
@@ -1536,6 +1536,7 @@ class CalculatedParamMobilityFn:
             WA_input_df = self.get_WA_sheet('Mobility')
             self.WA_Calc(player_id, WA_input_df, sd, ed, db, rep_ver_id)
             print("Mobility Script:- report_version_id finished")
+            callback()
         except Exception as e:
             print("Mobility Script:- Error in report_version_id:- ", e)
 

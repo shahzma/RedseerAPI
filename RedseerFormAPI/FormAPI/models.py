@@ -1,5 +1,6 @@
 import uuid
 import django
+import asyncio
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.dispatch import receiver
@@ -12,6 +13,8 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 from datetime import date, timedelta
 from FormAPI.utils.powerbi_refresh import PowerbiRefresh
+from FormAPI.utils.ReportAnalysis.Root_cause_analysis import Generate_report_insights
+from .utils.powerbi_date_change import PowerbiDateUpdate
 from .utils.service_utils import CalculatedParamFn
 from .utils.service_utils_foodtech import CalculatedParamFoodtechFn
 from .utils.service_utils_ottaudio import CalculatedParamOTTAudioFn
@@ -390,10 +393,10 @@ def notify_approval_by_email(sender, instance, **kwargs):
                             f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: Form {instance.id} approval notification sent to {email_list}')
                 except Exception as e:
                     print(
-                        f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: Form {instance.id} approval notification error -', e)
+                        f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Error: Form {instance.id} approval notification error -', e)
             else:
                 print(
-                    f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: Form {instance.id} approval notification issue - No email present!')
+                    f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Error: Form {instance.id} approval notification issue - No email present!')
     except:
         pass
 
@@ -426,10 +429,101 @@ def fill_audit_table(sender, instance, created, **kwargs):
     except:
         pass
 
+def refresh_powerbi_after_calc(form_id, player_name, report_id):
+    if (os.getenv('POWERBI_REPORT_REFRESH', 'False') == 'True'):
+        pbAllReports = pd.read_excel(os.path.join(settings.BASE_DIR, './FormAPI/utils/powerbi_players_reports.xlsx'))
+        playerPowerBiReport = pbAllReports[pbAllReports['player_name'] == player_name].iloc[0]
+        powerbiRefresh = PowerbiRefresh()
+        industry_id = Player.objects.filter(
+                player_name=player_name)[0].industry_id
+
+        # refresh test
+        print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Log: PB test reports refresh start for player -', player_name)
+        try: 
+            if pd.notnull(playerPowerBiReport['powerbi_company_profile']):     
+                powerbiRefresh.test(playerPowerBiReport['powerbi_company_profile'])
+                print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Log: PB test company report refreshed for player -', player_name)
+            if pd.notnull(playerPowerBiReport['powerbi_report_profile']):     
+                powerbiRefresh.test(playerPowerBiReport['powerbi_report_profile'])
+                print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Log: PB test sector report refreshed for player -', player_name)
+        except Exception as e:
+            print(
+                f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Error: PB test report refreshed mets error-', e)
+
+        # check forms of that industry always for this month approved to max level or not
+        current_month = datetime.datetime.now().month
+        current_year = datetime.datetime.now().year
+        formatted_month = str(current_month-1).zfill(2)
+        power_bi_enddate = f"{formatted_month}-01-{current_year}"
+
+        unapprovedWebforms = ReportVersion.objects.filter(
+            date_created__month=current_month, 
+            date_created__year=current_year, 
+            approved_by_level__lt=models.F('max_level_needed'),
+            report_id=report_id)
+        unapprovedWebformsCounts = unapprovedWebforms.count()
+
+        unsubmittedWebforms = ReportVersion.objects.filter(
+            date_created__month=current_month, 
+            date_created__year=current_year, 
+            is_submitted=0,
+            report_id=report_id)
+        unsubmittedWebformCounts = unsubmittedWebforms.count()
+
+        print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Log: number of unapproved webforms for sector of player {player_name} -', unapprovedWebformsCounts)
+        print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Log: number of unsubmitted webforms for sector of player {player_name} -', unsubmittedWebformCounts)
+        
+        if unsubmittedWebformCounts==0 and unapprovedWebformsCounts!=0: # generate report analysis
+            print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Log: Report Analysis triggered for sector of player -', player_name, "...")
+            try:
+                Generate_report_insights(industry_id)
+                print(
+                    f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  log: Report Analysis trigger completed sector of player -', player_name)
+            except Exception as e:
+                print(
+                    f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Error: Report Analysis trigger error -', e)
+
+        if unapprovedWebformsCounts==0: # reports refreshed for powerbi prod
+            print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Log: PB prod sector reports refresh start for player -', player_name)
+
+            # now refresh powerbi
+            email_list = ['amardeep.s@redseerconsulting.com']
+            if email_list:
+                try:
+                    msg = EmailMessage(
+                        'PowerBi production report refreshing',
+                        f'Dear user,<br><br>Your PB production prod rreport getting refreshed for report_id= <b><i>{report_id}</i></b>.',
+                        settings.EMAIL_HOST_USER,
+                        email_list
+                    )
+                    msg.content_subtype = "html"
+                    mail_status = msg.send()
+                except Exception as e:
+                    print(
+                        f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Error: PB production report refresh mail trigger error -', e)
+            try:
+                # refresh all reports of that sector
+                sectorPlayers = pbAllReports[pbAllReports['report_id'] == report_id]
+                for index, row in sectorPlayers.iterrows():
+                    try: 
+                        if pd.notnull(row['company_profile']):
+                            powerbiRefresh.prod(row['company_profile'])
+                            print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Log: PB prod company report refreshed for player -', row['player_name'])
+                        # refresh sector report at the end
+                        if pd.notnull(row['report_name']) and index == sectorPlayers.index[-1]:     
+                            powerbiRefresh.prod(row['report_name'])
+                            print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Log: PB test sector report refreshed for report -', row['report_name'])
+                
+                    except Exception as e:
+                        print(
+                            f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Error: PB production report refresh script error1 -', e)
+            except Exception as e:
+                print(
+                    f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Error: PB production report refresh script error2 -', e)
 
 @receiver(post_save, sender=ReportVersion)
 def refresh_power_bi(sender, instance, created, **kwargs):
-    print('refresh fn triggered')
+    print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Log: REFRESH fn triggered for report_version_id -', instance.id)
     # refresh power bi. should run 1 time only so need to make changes to if condition
     try:
         if instance.is_submitted and instance.approved_by_level >= 1:
@@ -440,15 +534,17 @@ def refresh_power_bi(sender, instance, created, **kwargs):
             start_date = str(start_date.date())
             end_date = str(end_date.date())
             report_id = instance.report_id
+            player_name = instance.company
+            approved_by_level = instance.approved_by_level
             player_id = Player.objects.filter(
-                player_name=instance.company)[0].player_id
+                player_name=player_name)[0].player_id
             try:
                 tmp = CalculatedParamFn()
                 tmpFoodtech = CalculatedParamFoodtechFn()
                 tmpOTTAudio = CalculatedParamOTTAudioFn()
                 tmpMobility = CalculatedParamMobilityFn()
                 if report_id == 14:
-                    tmpFoodtech.report_version_id(instance.id)
+                    tmpFoodtech.report_version_id(instance.id, lambda: refresh_powerbi_after_calc(instance.id, player_name, report_id))
                 if report_id == 45:
                     tmp.calc_script_eb2b(player_id, start_date, end_date)
                 if report_id == 46:
@@ -467,7 +563,7 @@ def refresh_power_bi(sender, instance, created, **kwargs):
                 if report_id == 1:
                     tmp.calc_script_video(player_id, start_date, end_date)
                 if report_id == 4:
-                    tmpOTTAudio.report_version_id(instance.id)
+                    tmpOTTAudio.report_version_id(instance.id, lambda: refresh_powerbi_after_calc(instance.id, player_name, report_id))
                 if report_id == 33:
                     tmp.calc_script_rmg(player_id, start_date, end_date)
                 if report_id == 36:
@@ -482,7 +578,7 @@ def refresh_power_bi(sender, instance, created, **kwargs):
                 if report_id == 28:
                     tmp.calc_script_edtech(player_id, start_date, end_date)
                 if report_id == 43:
-                    tmpMobility.report_version_id(instance.id)
+                    tmpMobility.report_version_id(instance.id, lambda: refresh_powerbi_after_calc(instance.id, player_name, report_id))
                 if report_id == 19:
                     tmp.calc_script_horizontals(
                         player_id, start_date, end_date)
@@ -491,9 +587,9 @@ def refresh_power_bi(sender, instance, created, **kwargs):
                 if report_id == 25:
                     tmp.calc_script_ehealth(player_id, start_date, end_date)
             except Exception as e:
-                print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: Error in triggering calulcated scripts -', e)
+                print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Error: Calulcated scripts triggger error -', e)
         # Push to powerbi reportUpdate
-        if (os.getenv('POWERBI_REPORT_REFRESH', 'False') == 'True'):
+        if False:
             pbAllReports = pd.read_excel('powerbi_players_reports.xlsx')
             form_player_name = instance.company
             playerPowerBiReport = pbAllReports[pbAllReports['player_name'] == form_player_name].iloc[0]
@@ -504,31 +600,31 @@ def refresh_power_bi(sender, instance, created, **kwargs):
             powerbiRefresh = PowerbiRefresh()
 
             # refresh test
-            if instance.is_submitted and instance.approved_by_level == 1:
-                print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: PB test reports refresh start for player -', form_player_name)
+            if instance.is_submitted and instance.approved_by_level >= 1:
+                print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Log: PB test reports refresh start for player -', form_player_name)
                 try: 
                     if pd.notnull(playerPowerBiReport['company_profile']):     
                         powerbiRefresh.test(playerPowerBiReport['company_profile'])
-                        print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: PB test company report refreshed for player -', form_player_name)
+                        print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Log: PB test company report refreshed for player -', form_player_name)
                     if pd.notnull(playerPowerBiReport['report_name']):     
                         powerbiRefresh.test(playerPowerBiReport['report_name'])
-                        print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: PB test sector report refreshed for player -', form_player_name)
+                        print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Log: PB test sector report refreshed for player -', form_player_name)
                 except Exception as e:
                     print(
-                        f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: PB test report refreshed mets error-', e)
+                        f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Error: PB test report refreshed mets error-', e)
             # refresh prod
             if instance.is_submitted and instance.approved_by_level == max_level:
                 # check all forms of that industry got approved to max level or not
                 current_month = datetime.datetime.now().month
                 current_year = datetime.datetime.now().year
-                incompleteWebforms = ReportVersion.objects.filter(
+                unapprovedWebforms = ReportVersion.objects.filter(
                     date_created__month=current_month, 
                     date_created__year=current_year, 
                     approved_by_level__lt=models.F('max_level_needed'),
                     report_id=form_report_id)
-                incompleteWebformsCounts = incompleteWebforms.count()
-                if incompleteWebformsCounts==0:
-                    print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: PB prod sector reports refresh start for player -', form_player_name)
+                unapprovedWebformsCounts = unapprovedWebforms.count()
+                if unapprovedWebformsCounts==0:
+                    print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Log: PB prod sector reports refresh start for player -', form_player_name)
                     email_list = ['amardeep.s@redseerconsulting.com']
                     if email_list:
                         try:
@@ -542,7 +638,7 @@ def refresh_power_bi(sender, instance, created, **kwargs):
                             mail_status = msg.send()
                         except Exception as e:
                             print(
-                                f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: PB production report refresh mail trigger error -', e)
+                                f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Error: PB production report refresh mail trigger error -', e)
                     try:
                         # refresh all reports of that sector
                         sectorPlayers = pbAllReports[pbAllReports['report_id'] == report_id]
@@ -550,18 +646,18 @@ def refresh_power_bi(sender, instance, created, **kwargs):
                             try: 
                                 if pd.notnull(row['company_profile']):     
                                     powerbiRefresh.prod(row['company_profile'])
-                                    print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: PB prod company report refreshed for player -', row['player_name'])
+                                    print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Log: PB prod company report refreshed for player -', row['player_name'])
                                 # refresh sector report at the end
                                 if pd.notnull(row['report_name']) and index == sectorPlayers.index[-1]:     
                                     powerbiRefresh.prod(row['report_name'])
-                                    print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Log: PB test sector report refreshed for report -', row['report_name'])
+                                    print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Log: PB test sector report refreshed for report -', row['report_name'])
                         
                             except Exception as e:
                                 print(
-                                    f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: PB production report refresh script error1 -', e)
+                                    f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Error: PB production report refresh script error1 -', e)
                     except Exception as e:
                         print(
-                            f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} Error: PB production report refresh script error2 -', e)
+                            f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Error: PB production report refresh script error2 -', e)
 
         workspace_id = os.getenv("workspace_id")
         url = "https://login.microsoftonline.com/common/oauth2/token"

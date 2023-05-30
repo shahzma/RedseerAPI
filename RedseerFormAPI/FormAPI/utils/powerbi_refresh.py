@@ -1,16 +1,16 @@
-import datetime
+from datetime import datetime
 import requests
 import ast
 import json
 
 
 class PowerbiRefresh:
-    def test(self, report_name):
+    def test(self, powerbi_profile_name):
         try:
+            required_profiles_names = [powerbi_profile_name]
             workspace_id = "5323522b-f0c6-4c0f-a8d3-76347bcadd5b"
 
             ### 1) Getting Access Token
-
             url = "https://login.microsoftonline.com/common/oauth2/token"
             data = {"grant_type":"password", 
                     "username":"digital@beeroute.onmicrosoft.com", 
@@ -24,34 +24,33 @@ class PowerbiRefresh:
             access_token = login_output["access_token"]
 
             ### 2) Getting Datasets Id
-
             auth_url = f"https://api.powerbi.com/v1.0/myorg/groups/{workspace_id}/reports/"
             auth_output = requests.get(auth_url, headers={'Authorization': f'Bearer {access_token}'})
 
             report_list = auth_output.json()["value"]
-
-            all_report_name_list = [x["name"] for x in report_list]
-            print(all_report_name_list)
+            available_profiles_name = [x["name"] for x in report_list]
+            print(
+                    f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Log: PowerbiRefresh test, availeble profiles -', available_profiles_name)
 
             ### 3) Required Report Name
-
-            # required_name_list = ["Content Social Media", "OTT Audio", "OTT Video", "Shortform Video", "Online_Retail",
-            #                      "Food Aggregators Beta", "RMG Beta", "Used Cars Beta", "D2C Omni Beta", "Meat Beta","FoodTech Report"]
-            required_name_list = [report_name]
+            # required_profiles_names = ["Content Social Media", "OTT Audio", "OTT Video", "Shortform Video", "Online_Retail",
+            #                      "Food Aggregators Beta", "RMG Beta", "Used Cars Beta", "D2C Omni Beta", "Meat Beta","FoodTech Report"]     
 
             ### 4) Refreshing all required data
-
             for report in report_list:
-                if report["name"] in required_name_list:
+                if report["name"] in required_profiles_names:
                     dataset_id = report["datasetId"]
                     refresh_url = f"https://api.powerbi.com/v1.0/myorg/datasets/{dataset_id}/refreshes"
                     response = requests.post(refresh_url, headers={'Authorization': f'Bearer {access_token}'})
-                    print(report["name"], response)
+                    print(
+                        f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Log: PowerbiRefresh test, profile-[{report["name"]}] refrested profiles with status -', response.status_code)
         except Exception as e:
             print(
-                    f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} PowerbiRefresh:- Error in test:- ', e)
-    def prod(self, report_name):
+                    f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Error: PowerbiRefresh test error :-', e)
+
+    def prod(self, powerbi_profile_name):
         try:
+            required_profiles_names = [powerbi_profile_name]
             workspace_id = "67294232-0c81-43c2-a16d-22544a0a390b"
 
             ### 1) Getting Access Token
@@ -68,29 +67,27 @@ class PowerbiRefresh:
             access_token = login_output["access_token"]
 
             ### 2) Getting Datasets Id
-
             auth_url = f"https://api.powerbi.com/v1.0/myorg/groups/{workspace_id}/reports/"
             auth_output = requests.get(auth_url, headers={'Authorization': f'Bearer {access_token}'})
 
             report_list = auth_output.json()["value"]
-
-            all_report_name_list = [x["name"] for x in report_list]
-            print(all_report_name_list)
+            available_profiles_name = [x["name"] for x in report_list]
+            print(
+                    f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Log: PowerbiRefresh prod, availeble profiles -', available_profiles_name)
 
             ### 3) Required Report Name
-
-            # required_name_list = ["Content Social Media", "OTT Audio", "OTT Video", "Shortform Video", "Online_Retail",
+            # required_profiles_names = ["Content Social Media", "OTT Audio", "OTT Video", "Shortform Video", "Online_Retail",
             #                      "Food Aggregators Beta", "RMG Beta", "Used Cars Beta", "D2C Omni Beta", "Meat Beta","FoodTech Report"]
-            required_name_list = [report_name]
+            
 
             ### 4) Refreshing all required data
-
             for report in report_list:
-                if report["name"] in required_name_list:
+                if report["name"] in required_profiles_names:
                     dataset_id = report["datasetId"]
                     refresh_url = f"https://api.powerbi.com/v1.0/myorg/datasets/{dataset_id}/refreshes"
                     response = requests.post(refresh_url, headers={'Authorization': f'Bearer {access_token}'})
-                    print(report["name"], response)
+                    print(
+                        f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Log: PowerbiRefresh prod, profile-[{report["name"]}] refrested profiles with status -', response.status_code)
         except Exception as e:
             print(
-                    f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")} PowerbiRefresh:- Error in prod:- ', e)
+                    f'{datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Error: PowerbiRefresh prod error :-', e)

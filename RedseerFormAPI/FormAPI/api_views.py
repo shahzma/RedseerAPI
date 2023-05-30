@@ -5,6 +5,7 @@ from django.utils import timezone
 from rest_framework import viewsets
 from . import serializers, models
 from .utils.form_validate import ValidateForm
+from FormAPI.models import refresh_power_bi
 from rest_framework.response import Response
 import calendar
 import datetime
@@ -247,6 +248,11 @@ class ReportVersionRUDView(RetrieveUpdateDestroyAPIView):
     queryset = models.ReportVersion.objects
     lookup_field = "id"
     lookup_url_kwarg = "id"
+
+    #patch_over_ride_fucntion
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        refresh_power_bi(sender=models.ReportVersion, instance=instance, created=False)
 
 
 class ReportResultLCView(ListCreateAPIView):

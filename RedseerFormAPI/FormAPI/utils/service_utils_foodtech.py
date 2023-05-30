@@ -193,14 +193,15 @@ class CalculatedParamFoodtechFn:
 
     def calc3(self, db):
         try:
+            database_name = db_settings['NAME']
             cur = db.cursor()
             s = (
-                'update content_data.main_data set `val_copy`=-`value` where parameter_id in (850,851,852,855,420,421,1730,422,3541,3542,3543);'
+                f'update {database_name}.main_data set `val_copy`=-`value` where parameter_id in (850,851,852,855,420,421,1730,422,3541,3542,3543);'
             )
             cur.execute(s)
             db.commit()
             s = (
-                'update content_data.main_data set `val_copy`=`value` where parameter_id in (848,849,854,417,418,419,1729,1727,3539,3540);'
+                f'update {database_name}.main_data set `val_copy`=`value` where parameter_id in (848,849,854,417,418,419,1729,1727,3539,3540);'
             )
             cur.execute(s)
             db.commit()
@@ -742,7 +743,7 @@ class CalculatedParamFoodtechFn:
         except Exception as e:
             print("Foodtech:- Error in calc_script:- ", e)
 
-    def report_version_id(self, rep_ver_id):
+    def report_version_id(self, rep_ver_id, callback):
         print("Foodtech:- calculate prapameter script started for report_version_id=", rep_ver_id)
         try:
             db = pymysql.connect(
@@ -785,5 +786,6 @@ class CalculatedParamFoodtechFn:
             self.calc2(player_id, sd, ed, db, rep_ver_id)
             self.calc3(db)
             print("Foodtech:- report_version_id finished")
+            callback()
         except Exception as e:
             print("Foodtech:- Error in report_version_id:- ", e)

@@ -420,7 +420,7 @@ class CalculatedParamOTTAudioFn:
         except Exception as e:
             print("OTTAudio Script:- Error in calc_script_audio:- ", e)
 
-    def report_version_id(self, rep_ver_id):
+    def report_version_id(self, rep_ver_id, callback):
         print("OTTAudio Script:- calculate prapameter script started for report_version_id=", rep_ver_id)
         try:
             db = pymysql.connect(
@@ -449,6 +449,7 @@ class CalculatedParamOTTAudioFn:
             cur.close()
             db.close()
             print("OTTAudio Script:- report_version_id finished")
+            callback()
         except Exception as e:
             print("OTTAudio Script:- Error in report_version_id:- ", e)
 
