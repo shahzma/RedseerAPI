@@ -125,7 +125,7 @@ class Report(models.Model):
         managed = False
         db_table = "report"
 
-    def __str__(self): #'name' is being used as attribute to identify Report objects 
+    def __str__(self):  # 'name' is being used as attribute to identify Report objects
         return self.name
     
 class Player(models.Model):
@@ -170,7 +170,8 @@ class Player(models.Model):
 class ReportVersion(models.Model):
     id = models.AutoField(primary_key=True, auto_created=True)
     name = models.CharField(max_length=100)
-    company = models.CharField(max_length=255, default='testCompany') # this should be a foriegn key
+    # this should be a foriegn key
+    company = models.CharField(max_length=255, default='testCompany')
     report = models.ForeignKey(Report, on_delete=models.CASCADE)
     filled_count = models.IntegerField(default=0)
     is_submitted = models.BooleanField(default=False)
@@ -179,7 +180,7 @@ class ReportVersion(models.Model):
     approved_by_level = models.IntegerField(default=1)
     max_level_needed = models.IntegerField(default=5)
     date_created = models.DateTimeField(default=django.utils.timezone.now)
-    closing_time = models.DateTimeField(blank = True)
+    closing_time = models.DateTimeField(blank=True)
 
     def __str__(self):
         return str(self.id) + " - " + self.name
@@ -230,19 +231,24 @@ class ReportVersion(models.Model):
 #         db_table = "main_data"
 
 
-#reportresult
+# reportresult
 class MainData(models.Model):
     id = models.AutoField(auto_created=True, primary_key=True)
-    player = models.ForeignKey('Player', models.DO_NOTHING, blank=True, null=True)
+    player = models.ForeignKey(
+        'Player', models.DO_NOTHING, blank=True, null=True)
     start_date = models.DateField(blank=True, null=True)
     end_date = models.DateField(blank=True, null=True)
-    parameter = models.ForeignKey('Parameter', models.DO_NOTHING, blank=True, null=True)
-    value = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    parameter = models.ForeignKey(
+        'Parameter', models.DO_NOTHING, blank=True, null=True)
+    value = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True)
     remark = models.CharField(max_length=200, blank=True, null=True)
     date_created = models.DateField(blank=True, null=True)
     source = models.CharField(max_length=45, blank=True, null=True)
-    parametertree = models.ForeignKey(ParameterTree, on_delete=models.PROTECT, default=1)
-    report_version = models.ForeignKey(ReportVersion, on_delete=models.PROTECT, default=1)
+    parametertree = models.ForeignKey(
+        ParameterTree, on_delete=models.PROTECT, default=1)
+    report_version = models.ForeignKey(
+        ReportVersion, on_delete=models.PROTECT, default=1)
 
     class Meta:
         managed = False
@@ -250,7 +256,7 @@ class MainData(models.Model):
 
 
 class AuditTable(models.Model):
-    user = models.CharField(max_length=1000, default=None)  #email
+    user = models.CharField(max_length=1000, default=None)  # email
     user_level = models.IntegerField(default=1)
     date = models.DateTimeField(auto_now_add=True, blank=True)
     action = models.IntegerField(default=0)
@@ -264,22 +270,29 @@ class AuditTable(models.Model):
 
 class MainDataProd(models.Model):
     id = models.AutoField(auto_created=True, primary_key=True)
-    player = models.ForeignKey('Player', models.DO_NOTHING, blank=True, null=True)
+    player = models.ForeignKey(
+        'Player', models.DO_NOTHING, blank=True, null=True)
     start_date = models.DateField(blank=True, null=True)
     end_date = models.DateField(blank=True, null=True)
-    parameter = models.ForeignKey('Parameter', models.DO_NOTHING, blank=True, null=True)
-    value = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    parameter = models.ForeignKey(
+        'Parameter', models.DO_NOTHING, blank=True, null=True)
+    value = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True)
     remark = models.CharField(max_length=200, blank=True, null=True)
     date_created = models.DateField(blank=True, null=True)
     source = models.CharField(max_length=45, blank=True, null=True)
-    parametertree = models.ForeignKey(ParameterTree, on_delete=models.PROTECT, default=1)
-    report_version = models.ForeignKey(ReportVersion, on_delete=models.PROTECT, default=1)
+    parametertree = models.ForeignKey(
+        ParameterTree, on_delete=models.PROTECT, default=1)
+    report_version = models.ForeignKey(
+        ReportVersion, on_delete=models.PROTECT, default=1)
 
     class Meta:
         managed = False
         db_table = 'main_data_prod'
 
 # Table relations
+
+
 class ReportQuestion(models.Model):
     id = models.AutoField(auto_created=True, primary_key=True)
     report = models.ForeignKey(Report, on_delete=models.PROTECT)
@@ -387,7 +400,8 @@ def notify_approval_by_email(sender, instance, **kwargs):
 
 @receiver(post_save, sender=ReportVersion)
 def fill_main_data_prod(sender, instance, created, **kwargs):
-    max_level = Report.objects.filter(id=instance.report_id)[0].max_level_needed
+    max_level = Report.objects.filter(id=instance.report_id)[
+        0].max_level_needed
     if instance.approved_by_level == max_level:
         qs_main_data = MainData.objects.filter(report_version=instance.id)
         for i in qs_main_data:
@@ -404,10 +418,11 @@ def fill_audit_table(sender, instance, created, **kwargs):
     try:
         if instance.approved_by_level == 1 and instance.date_created.date() != datetime.date.today():
             user_level = 1
-            user =instance.email
+            user = instance.email
             action = True
             form_id = ReportVersion.objects.filter(id=instance.id)[0]
-            AuditTable.objects.create(user=user, user_level=user_level, action=action, form_id = form_id)
+            AuditTable.objects.create(
+                user=user, user_level=user_level, action=action, form_id=form_id)
     except:
         pass
 
