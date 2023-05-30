@@ -160,16 +160,15 @@ class ValidateForm:
 
     def find_anomalies(self, webform_dict):
         # global player_id, reference_date
-        database_name = db_settings['NAME']
         # db_session, db_conn = self.get_db_connection()
         db_session, db_conn = self.get_db_connection()
 
         players_df = pd.read_sql(text(
             "SELECT player_id, player_name, industry_id FROM player"), db_conn)
         industry_df = pd.read_sql(
-            text(f"SELECT industry_id, industry_name from {database_name}.industry"), db_conn)
+            text(f"SELECT industry_id, industry_name from industry"), db_conn)
         parameter_df = pd.read_sql(text(
-            "SELECT parameter_id, parameter_name, parent_parameter FROM {database_name}.parameter"), db_conn)
+            "SELECT parameter_id, parameter_name, parent_parameter FROM parameter"), db_conn)
         player_name = webform_dict["playerName"]
         player_id = players_df[players_df['player_name']
                                == player_name]['player_id'].iloc[0]
