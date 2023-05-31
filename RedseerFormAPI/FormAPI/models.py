@@ -16,6 +16,7 @@ from FormAPI.utils.powerbi_refresh import PowerbiRefresh
 from FormAPI.utils.ReportAnalysis.Root_cause_analysis import Generate_report_insights
 from .utils.powerbi_date_change import PowerbiDateUpdate
 from .utils.service_utils import CalculatedParamFn
+from .utils.service_utils_ottvideo import CalculatedParamOTTVidioFn
 from .utils.service_utils_foodtech import CalculatedParamFoodtechFn
 from .utils.service_utils_ottaudio import CalculatedParamOTTAudioFn
 from .utils.service_utils_mobility import CalculatedParamMobilityFn
@@ -561,7 +562,8 @@ def refresh_power_bi(sender, instance, created, **kwargs):
                 if report_id == 5:
                     tmp.calc_script_shortform(player_id, start_date, end_date)
                 if report_id == 1:
-                    tmp.calc_script_video(player_id, start_date, end_date)
+                    tmpOTTVideo = CalculatedParamOTTVidioFn()
+                    tmpOTTVideo.report_version_id(instance.id, lambda: refresh_powerbi_after_calc(instance.id, player_name, report_id))
                 if report_id == 4:
                     tmpOTTAudio.report_version_id(instance.id, lambda: refresh_powerbi_after_calc(instance.id, player_name, report_id))
                 if report_id == 33:
