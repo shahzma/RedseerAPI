@@ -20,6 +20,7 @@ from .utils.service_utils_ottvideo import CalculatedParamOTTVidioFn
 from .utils.service_utils_foodtech import CalculatedParamFoodtechFn
 from .utils.service_utils_ottaudio import CalculatedParamOTTAudioFn
 from .utils.service_utils_mobility import CalculatedParamMobilityFn
+from .utils.service_utils_csm import CalculatedParamCSMFn
 import calendar
 import datetime
 import requests
@@ -558,7 +559,8 @@ def refresh_power_bi(sender, instance, created, **kwargs):
                     tmp.calc_script_eb2bEPharma(
                         player_id, start_date, end_date)
                 if report_id == 6:
-                    tmp.calc_script_csm(player_id, start_date, end_date)
+                    tmpCSM = CalculatedParamCSMFn()
+                    tmpCSM.report_version_id(instance.id, lambda: refresh_powerbi_after_calc(instance.id, player_name, report_id))
                 if report_id == 5:
                     tmp.calc_script_shortform(player_id, start_date, end_date)
                 if report_id == 1:
