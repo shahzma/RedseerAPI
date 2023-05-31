@@ -506,12 +506,12 @@ def refresh_powerbi_after_calc(form_id, player_name, report_id):
                 sectorPlayers = pbAllReports[pbAllReports['report_id'] == report_id]
                 for index, row in sectorPlayers.iterrows():
                     try: 
-                        if pd.notnull(row['company_profile']):
-                            powerbiRefresh.prod(row['company_profile'])
+                        if pd.notnull(row['powerbi_company_profile']):
+                            powerbiRefresh.prod(row['powerbi_company_profile'])
                             print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Log: PB prod company report refreshed for player -', row['player_name'])
                         # refresh sector report at the end
-                        if pd.notnull(row['report_name']) and index == sectorPlayers.index[-1]:     
-                            powerbiRefresh.prod(row['report_name'])
+                        if pd.notnull(row['powerbi_report_profile']) and index == sectorPlayers.index[-1]:     
+                            powerbiRefresh.prod(row['powerbi_report_profile'])
                             print(f'{datetime.datetime.now().strftime("[%d/%b/%Y %H:%M:%S]")}  Log: PB test sector report refreshed for report -', row['report_name'])
                 
                     except Exception as e:
