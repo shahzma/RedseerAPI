@@ -33,6 +33,13 @@ DEBUG = (os.getenv('DEBUG', 'True') == 'True')
 
 ALLOWED_HOSTS = ['*']
 
+# Danjgo Admin uses below two parameter for Cross Site Request Forgery(CSRF) verification for trusted origins
+CSRF_TRUSTED_ORIGINS = [
+    'https://testwebformapi.benchmarks.digital',
+    'https://webformapi.benchmarks.digital'
+]
+CSRF_COOKIE_SECURE = True
+
 
 # Application definition
 
