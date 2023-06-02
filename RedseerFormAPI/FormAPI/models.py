@@ -21,6 +21,7 @@ from .utils.service_utils_foodtech import CalculatedParamFoodtechFn
 from .utils.service_utils_ottaudio import CalculatedParamOTTAudioFn
 from .utils.service_utils_mobility import CalculatedParamMobilityFn
 from .utils.service_utils_csm import CalculatedParamCSMFn
+from .utils.service_utils_shortform import CalculatedParamShotformFn
 import calendar
 import datetime
 import requests
@@ -562,7 +563,8 @@ def refresh_power_bi(sender, instance, created, **kwargs):
                     tmpCSM = CalculatedParamCSMFn()
                     tmpCSM.report_version_id(instance.id, lambda: refresh_powerbi_after_calc(instance.id, player_name, report_id))
                 if report_id == 5:
-                    tmp.calc_script_shortform(player_id, start_date, end_date)
+                    tmpShortform = CalculatedParamShotformFn()
+                    tmpShortform.report_version_id(instance.id, lambda: refresh_powerbi_after_calc(instance.id, player_name, report_id))
                 if report_id == 1:
                     tmpOTTVideo = CalculatedParamOTTVidioFn()
                     tmpOTTVideo.report_version_id(instance.id, lambda: refresh_powerbi_after_calc(instance.id, player_name, report_id))
