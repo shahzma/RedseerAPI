@@ -60,8 +60,8 @@ class ValidateForm:
                     std_last_12_months
 
                 # threshold_2 -> % change from last_month to reference month for the previous year
-                del_change_t1 = value_df[(value_df["month"] == reference_date.month) & (value_df["year"] != reference_date.year)]["pct_change"].mean()
-                # del_change_t1 = value_df[value_df["start_date"] == previous_year_date]["pct_change"].iloc[0]
+                # del_change_t1 = value_df[(value_df["month"] == reference_date.month) & (value_df["year"] != reference_date.year)]["pct_change"].mean()
+                del_change_t1 = value_df[value_df["start_date"] == previous_year_date]["pct_change"].iloc[0]
                 dev_tolerance = 0.1
                 threshold_2_UB = del_change_t1 + dev_tolerance
                 threshold_2_LB = del_change_t1 - dev_tolerance

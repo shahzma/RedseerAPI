@@ -167,6 +167,7 @@ class FormAutomation:
         #cur.execute("select player_name, report.id from((industry INNER JOIN report ON industry.industry_id = report.industry_id) INNER JOIN player ON industry.industry_id = player.industry_id and player.is_active = 1);")
         cur.execute("select player_name, player.report_id, industry.industry_name from(industry INNER JOIN player ON industry.industry_id = player.industry_id and player.is_active = 1);")
         playersTuples = cur.fetchall()
+        # eg. playersTuples = (('MX Player', 1, 'OTT Video'), ('Gaana', 4, 'OTT Audio'))
         cur.close()
 
         # industryWiseDataExample = {45: [
@@ -222,7 +223,7 @@ class FormAutomation:
                 #     'Content-Type': 'application/json'
                 # }
                 request_data = {
-                    "name": player_name+' Input',
+                    "name": player_name,
                     "company": player_name,
                     "current_instance": {
                         "id": lastReportVersionId,
